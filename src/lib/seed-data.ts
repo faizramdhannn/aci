@@ -1,0 +1,211 @@
+import type { Category, ClickEvent, Hotspot, ShoppableImage, ViewEvent } from "@/types";
+
+/**
+ * Static fallback data used whenever MongoDB is not reachable (e.g. first
+ * local run before the user configures MONGODB_URI). Lets the app render
+ * and demo the full flow without any external service.
+ */
+
+const OWNER_ID = "seed-owner";
+
+export const seedCategories: Category[] = [
+  { _id: "cat-fashion", name: "Fashion", slug: "fashion", sortOrder: 0, isActive: true },
+  { _id: "cat-beauty", name: "Beauty", slug: "beauty", sortOrder: 1, isActive: true },
+  { _id: "cat-accessories", name: "Accessories", slug: "accessories", sortOrder: 2, isActive: true },
+  { _id: "cat-shoes", name: "Shoes", slug: "shoes", sortOrder: 3, isActive: true },
+  { _id: "cat-bags", name: "Bags", slug: "bags", sortOrder: 4, isActive: true },
+  { _id: "cat-lifestyle", name: "Lifestyle", slug: "lifestyle", sortOrder: 5, isActive: true },
+];
+
+export const seedShoppableImages: ShoppableImage[] = [
+  {
+    _id: "img-cream-hijab",
+    ownerId: OWNER_ID,
+    title: "Cream on cream",
+    slug: "cream-on-cream",
+    description: "Everyday look, warm palette, easy to re-wear.",
+    imageUrl: "/seed/look-cream-hijab.svg",
+    imageWidth: 900,
+    imageHeight: 1350,
+    categoryIds: ["cat-fashion"],
+    status: "published",
+    createdAt: "2026-01-05T08:00:00.000Z",
+    updatedAt: "2026-01-05T08:00:00.000Z",
+  },
+  {
+    _id: "img-golden-hour",
+    ownerId: OWNER_ID,
+    title: "Golden hour",
+    slug: "golden-hour",
+    description: "Weekend outfit shot right before sunset.",
+    imageUrl: "/seed/look-golden-hour.svg",
+    imageWidth: 900,
+    imageHeight: 1350,
+    categoryIds: ["cat-fashion", "cat-lifestyle"],
+    status: "published",
+    createdAt: "2026-02-01T08:00:00.000Z",
+    updatedAt: "2026-02-01T08:00:00.000Z",
+  },
+];
+
+export const seedHotspots: Hotspot[] = [
+  {
+    _id: "hs-1",
+    shoppableImageId: "img-cream-hijab",
+    ownerId: OWNER_ID,
+    type: "product",
+    title: "Cream Hijab",
+    description: "Voal square, easy to pin.",
+    affiliateUrl: "https://shopee.co.id/search?keyword=hijab%20voal%20cream",
+    logoUrl: "/seed/badge-tag.svg",
+    productPrice: 45000,
+    marketplace: "shopee",
+    x: 0.5,
+    y: 0.2,
+    width: 0.09,
+    height: 0.09,
+    rotation: 0,
+    zIndex: 1,
+    isActive: true,
+    createdAt: "2026-01-05T08:00:00.000Z",
+    updatedAt: "2026-01-05T08:00:00.000Z",
+  },
+  {
+    _id: "hs-2",
+    shoppableImageId: "img-cream-hijab",
+    ownerId: OWNER_ID,
+    type: "product",
+    title: "Brown Oversized Shirt",
+    description: "Runs true to size, cotton twill.",
+    affiliateUrl: "https://www.tokopedia.com/search?st=product&q=oversized%20shirt%20brown",
+    logoUrl: "/seed/badge-tag.svg",
+    productPrice: 129000,
+    marketplace: "tokopedia",
+    x: 0.35,
+    y: 0.56,
+    width: 0.1,
+    height: 0.1,
+    rotation: 0,
+    zIndex: 2,
+    isActive: true,
+    createdAt: "2026-01-05T08:00:00.000Z",
+    updatedAt: "2026-01-05T08:00:00.000Z",
+  },
+  {
+    _id: "hs-3",
+    shoppableImageId: "img-cream-hijab",
+    ownerId: OWNER_ID,
+    type: "product",
+    title: "Structured Sling Bag",
+    description: "Faux leather, fits a phone and cards.",
+    affiliateUrl: "https://shopee.co.id/search?keyword=sling%20bag%20brown",
+    logoUrl: "/seed/badge-tag.svg",
+    productPrice: 89000,
+    marketplace: "shopee",
+    x: 0.7,
+    y: 0.63,
+    width: 0.09,
+    height: 0.09,
+    rotation: 0,
+    zIndex: 3,
+    isActive: true,
+    createdAt: "2026-01-05T08:00:00.000Z",
+    updatedAt: "2026-01-05T08:00:00.000Z",
+  },
+  {
+    _id: "hs-4",
+    shoppableImageId: "img-cream-hijab",
+    ownerId: OWNER_ID,
+    type: "product",
+    title: "Wide Leg Pants",
+    description: "Orange twill, high waist.",
+    affiliateUrl: "https://www.tiktok.com/search?q=wide%20leg%20pants%20orange",
+    logoUrl: "/seed/badge-tag.svg",
+    productPrice: 149000,
+    marketplace: "tiktok-shop",
+    x: 0.44,
+    y: 0.82,
+    width: 0.1,
+    height: 0.1,
+    rotation: 0,
+    zIndex: 4,
+    isActive: true,
+    createdAt: "2026-01-05T08:00:00.000Z",
+    updatedAt: "2026-01-05T08:00:00.000Z",
+  },
+  {
+    _id: "hs-5",
+    shoppableImageId: "img-golden-hour",
+    ownerId: OWNER_ID,
+    type: "product",
+    title: "Orange Hijab",
+    affiliateUrl: "https://shopee.co.id/search?keyword=hijab%20orange",
+    logoUrl: "/seed/badge-tag.svg",
+    productPrice: 42000,
+    marketplace: "shopee",
+    x: 0.5,
+    y: 0.2,
+    width: 0.09,
+    height: 0.09,
+    rotation: 0,
+    zIndex: 1,
+    isActive: true,
+    createdAt: "2026-02-01T08:00:00.000Z",
+    updatedAt: "2026-02-01T08:00:00.000Z",
+  },
+  {
+    _id: "hs-6",
+    shoppableImageId: "img-golden-hour",
+    ownerId: OWNER_ID,
+    type: "product",
+    title: "Cream Blouse",
+    affiliateUrl: "https://www.tokopedia.com/search?st=product&q=cream%20blouse",
+    logoUrl: "/seed/badge-tag.svg",
+    productPrice: 119000,
+    marketplace: "tokopedia",
+    x: 0.36,
+    y: 0.55,
+    width: 0.1,
+    height: 0.1,
+    rotation: 0,
+    zIndex: 2,
+    isActive: true,
+    createdAt: "2026-02-01T08:00:00.000Z",
+    updatedAt: "2026-02-01T08:00:00.000Z",
+  },
+  {
+    _id: "hs-7",
+    shoppableImageId: "img-golden-hour",
+    ownerId: OWNER_ID,
+    type: "product",
+    title: "Minimal Watch",
+    affiliateUrl: "https://shopee.co.id/search?keyword=minimal%20watch",
+    logoUrl: "/seed/badge-tag.svg",
+    productPrice: 175000,
+    marketplace: "shopee",
+    x: 0.67,
+    y: 0.66,
+    width: 0.07,
+    height: 0.07,
+    rotation: 0,
+    zIndex: 3,
+    isActive: true,
+    createdAt: "2026-02-01T08:00:00.000Z",
+    updatedAt: "2026-02-01T08:00:00.000Z",
+  },
+];
+
+export const seedViewEvents: ViewEvent[] = [];
+export const seedClickEvents: ClickEvent[] = [];
+
+export function findSeedShoppableImageBySlug(slug: string) {
+  return seedShoppableImages.find((image) => image.slug === slug);
+}
+
+export function findSeedHotspotById(id: string) {
+  return seedHotspots.find((hotspot) => hotspot._id === id);
+}
+
+export function seedHotspotsForImage(imageId: string) {
+  return seedHotspots.filter((hotspot) => hotspot.shoppableImageId === imageId);
+}
