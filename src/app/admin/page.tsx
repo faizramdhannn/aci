@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { listShoppableImages, getAnalyticsSummary } from "@/lib/data";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminOverviewPage() {
   const images = await listShoppableImages();
   const summary = await getAnalyticsSummary();

@@ -1,6 +1,8 @@
 import { getAnalyticsSummary } from "@/lib/data";
 import { ClicksChart } from "@/components/analytics/clicks-chart";
 
+export const dynamic = "force-dynamic";
+
 export default async function AnalyticsPage() {
   const summary = await getAnalyticsSummary();
 

@@ -1,6 +1,8 @@
 import { listCategories } from "@/lib/data";
 import { CategoryManager } from "@/components/admin/category-manager";
 
+export const dynamic = "force-dynamic";
+
 export default async function AdminCategoriesPage() {
   const categories = await listCategories();
 

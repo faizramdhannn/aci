@@ -4,6 +4,11 @@ import { BottomBar } from "@/components/navigation/bottom-bar";
 import { ShoppableImage } from "@/components/storefront/shoppable-image";
 import { listShoppableImages, listHotspotsForImage } from "@/lib/data";
 
+// Content is managed from /admin and must reflect edits immediately —
+// without this, Next statically prerenders the page at build time and
+// visitors see stale data until the next deploy.
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const images = await listShoppableImages();
   const [feature, ...rest] = images.filter((i) => i.status === "published");
