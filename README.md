@@ -81,7 +81,7 @@ This checkout already includes a working `.env.local` with a demo admin login, s
    npm run seed
    ```
 
-5. **Image uploads (optional).** Without `BLOB_READ_WRITE_TOKEN`, the "Upload a look" admin form falls back to picking one of two bundled sample photos or pasting an external image URL — there's no real file uploader in this build. To enable real uploads, add a [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) store and put its token in `BLOB_READ_WRITE_TOKEN` (note: the upload UI itself isn't wired to it yet — see Known limitations).
+5. **Image uploads (optional).** File upload works out of the box — drop a photo (JPEG/PNG/WEBP/GIF, up to 8MB) into the "Upload a look" form or the editor's "Change photo" panel, and it's saved to `public/uploads/` on your machine. That's fine for local development but won't survive a serverless deploy (ephemeral filesystem) or work with multiple server instances. For that, add a [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) store and put its token in `BLOB_READ_WRITE_TOKEN` — the same upload endpoint automatically switches to Blob storage when that's set, no code changes needed.
 
 6. Run it:
 
@@ -107,6 +107,7 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 - `/go/[hotspotId]` affiliate redirect: server-side URL validation (http/https only), records a click event, then redirects
 - View tracking on shoppable image pages (device/browser/OS parsed from the user agent, session cookie)
 - Admin: email/password login (single account, env-configured), protected `/admin/*` routes via `src/proxy.ts`
+- Image upload: drag-and-drop or file picker, validated server-side (type + 8MB size limit), saved to `public/uploads/` locally or Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set (`src/lib/storage.ts`) — used both when creating a new look and to replace an existing look's photo from the editor
 - Admin overview, shoppable images list, and a Canva-like hotspot editor (React Konva: drag, resize + rotate via Transformer or a precise rotation slider, add/delete hotspots, autosave, publish/unpublish)
 - Analytics dashboard: totals, CTR, clicks/views over time chart, top products, device breakdown
 - Coordinate system: all hotspot positions are normalized (0–1) relative to the source image — see `src/lib/coordinates.ts` and its tests
@@ -116,7 +117,6 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 
 Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to ship a working MVP:
 
-- **No real file upload UI.** "Upload a look" only accepts a URL (two bundled sample SVGs, or any external image URL). Vercel Blob is installed as a dependency but not wired into an upload form — this is the most likely next thing to build.
 - **Single admin account only**, configured via env vars — no multi-user/multi-tenant support, no signup flow.
 - **No heatmap visualization** of click density over the photo (click `clickX`/`clickY` are captured in the data model but nothing renders them as a heatmap yet).
 - **No search implementation** — the search links in the nav currently just go to `/shop`.

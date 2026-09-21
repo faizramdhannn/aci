@@ -2,29 +2,35 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-
-const sampleImages = [
-  { label: "Cream on cream (sample)", value: "/seed/look-cream-hijab.svg" },
-  { label: "Golden hour (sample)", value: "/seed/look-golden-hour.svg" },
-];
+import { ImageUploadField, type UploadedImage } from "@/components/editor/image-upload-field";
 
 export default function NewShoppableImagePage() {
   const router = useRouter();
   const [title, setTitle] = useState("");
-  const [imageUrl, setImageUrl] = useState(sampleImages[0].value);
   const [description, setDescription] = useState("");
+  const [source, setSource] = useState<"upload" | "url">("upload");
+  const [uploaded, setUploaded] = useState<UploadedImage | null>(null);
+  const [imageUrl, setImageUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const canSubmit = source === "upload" ? !!uploaded : !!imageUrl.trim();
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!canSubmit) return;
     setLoading(true);
     setError(null);
+
+    const body =
+      source === "upload" && uploaded
+        ? { title, description, imageUrl: uploaded.url, imageWidth: uploaded.width, imageHeight: uploaded.height }
+        : { title, description, imageUrl: imageUrl.trim() };
 
     const res = await fetch("/api/shoppable-images", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ title, imageUrl, description }),
+      body: JSON.stringify(body),
     });
 
     setLoading(false);
@@ -42,8 +48,7 @@ export default function NewShoppableImagePage() {
     <div className="max-w-lg">
       <h1 className="mb-1 text-2xl font-semibold text-brown">Upload a look</h1>
       <p className="mb-6 text-sm text-brown-soft">
-        For this local build, pick one of the sample photos or paste an image URL — a real file
-        uploader needs Vercel Blob configured (see README).
+        Upload a photo from your computer, or paste a link to one that&apos;s already hosted online.
       </p>
 
       <form onSubmit={onSubmit} className="space-y-4">
@@ -58,26 +63,42 @@ export default function NewShoppableImagePage() {
           />
         </label>
 
-        <label className="block text-sm">
-          <span className="mb-1 block text-brown-soft">Photo</span>
-          <select
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="w-full rounded-lg border border-brown/20 bg-white/40 px-3 py-2 outline-none focus:border-orange"
-          >
-            {sampleImages.map((img) => (
-              <option key={img.value} value={img.value}>
-                {img.label}
-              </option>
-            ))}
-          </select>
-          <input
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            placeholder="or paste an image URL"
-            className="mt-2 w-full rounded-lg border border-brown/20 bg-white/40 px-3 py-2 text-xs outline-none focus:border-orange"
-          />
-        </label>
+        <div className="text-sm">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-brown-soft">Photo</span>
+            <div className="ml-auto flex gap-1 rounded-full border border-brown/15 p-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => setSource("upload")}
+                className={`rounded-full px-3 py-1 transition-colors ${
+                  source === "upload" ? "bg-brown text-cream" : "text-brown-soft"
+                }`}
+              >
+                Upload
+              </button>
+              <button
+                type="button"
+                onClick={() => setSource("url")}
+                className={`rounded-full px-3 py-1 transition-colors ${
+                  source === "url" ? "bg-brown text-cream" : "text-brown-soft"
+                }`}
+              >
+                Use a URL
+              </button>
+            </div>
+          </div>
+
+          {source === "upload" ? (
+            <ImageUploadField value={uploaded} onChange={setUploaded} />
+          ) : (
+            <input
+              value={imageUrl}
+              onChange={(e) => setImageUrl(e.target.value)}
+              placeholder="https://…"
+              className="w-full rounded-lg border border-brown/20 bg-white/40 px-3 py-2 outline-none focus:border-orange"
+            />
+          )}
+        </div>
 
         <label className="block text-sm">
           <span className="mb-1 block text-brown-soft">Description (optional)</span>
@@ -93,7 +114,7 @@ export default function NewShoppableImagePage() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !canSubmit}
           className="rounded-full bg-orange px-5 py-2.5 text-sm font-semibold text-cream transition-opacity hover:opacity-90 disabled:opacity-60"
         >
           {loading ? "Saving…" : "Continue to editor"}
