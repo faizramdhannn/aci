@@ -93,6 +93,36 @@ export async function listCategories(): Promise<Category[]> {
   return db.collection<Category>("categories").find().sort({ sortOrder: 1 }).toArray();
 }
 
+export async function createCategory(category: Category): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    getMemoryStore().categories.push(category);
+    return;
+  }
+  await db.collection<Category>("categories").insertOne(category);
+}
+
+export async function updateCategory(id: string, patch: Partial<Category>): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    const store = getMemoryStore();
+    const idx = store.categories.findIndex((c) => c._id === id);
+    if (idx >= 0) store.categories[idx] = { ...store.categories[idx], ...patch };
+    return;
+  }
+  await db.collection<Category>("categories").updateOne({ _id: id }, { $set: patch });
+}
+
+export async function deleteCategory(id: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    const store = getMemoryStore();
+    store.categories = store.categories.filter((c) => c._id !== id);
+    return;
+  }
+  await db.collection<Category>("categories").deleteOne({ _id: id });
+}
+
 export async function recordView(event: Omit<ViewEvent, "_id" | "createdAt">): Promise<void> {
   const full: ViewEvent = { ...event, _id: randomUUID(), createdAt: new Date().toISOString() };
   const db = await getDb();
@@ -111,6 +141,80 @@ export async function recordClick(event: Omit<ClickEvent, "_id" | "createdAt">):
     return;
   }
   await db.collection<ClickEvent>("clickEvents").insertOne(full);
+}
+
+export interface HotspotHeat {
+  hotspotId: string;
+  title: string;
+  x: number;
+  y: number;
+  clicks: number;
+}
+
+/** Per-hotspot click counts for one shoppable image, for the click heatmap. */
+export async function getHeatmapForImage(imageId: string): Promise<HotspotHeat[]> {
+  const db = await getDb();
+  const hotspots = await listHotspotsForImage(imageId);
+  const clicks: ClickEvent[] = db
+    ? await db.collection<ClickEvent>("clickEvents").find({ shoppableImageId: imageId }).toArray()
+    : getMemoryStore().clicks.filter((c) => c.shoppableImageId === imageId);
+
+  const countByHotspot = new Map<string, number>();
+  for (const click of clicks) {
+    countByHotspot.set(click.hotspotId, (countByHotspot.get(click.hotspotId) ?? 0) + 1);
+  }
+
+  return hotspots.map((hotspot) => ({
+    hotspotId: hotspot._id,
+    title: hotspot.title,
+    x: hotspot.x,
+    y: hotspot.y,
+    clicks: countByHotspot.get(hotspot._id) ?? 0,
+  }));
+}
+
+export interface SearchResults {
+  images: ShoppableImage[];
+}
+
+/** Case-insensitive search across shoppable image titles/descriptions and their product hotspot titles. */
+export async function searchContent(query: string): Promise<SearchResults> {
+  const q = query.trim().toLowerCase();
+  if (!q) return { images: [] };
+
+  const db = await getDb();
+  const images = db
+    ? await db
+        .collection<ShoppableImage>("shoppableImages")
+        .find({
+          status: "published",
+          $or: [
+            { title: { $regex: q, $options: "i" } },
+            { description: { $regex: q, $options: "i" } },
+          ],
+        })
+        .toArray()
+    : getMemoryStore().images.filter(
+        (image) =>
+          image.status === "published" &&
+          (image.title.toLowerCase().includes(q) || image.description?.toLowerCase().includes(q))
+      );
+
+  const hotspots: Hotspot[] = db
+    ? await db.collection<Hotspot>("hotspots").find({ title: { $regex: q, $options: "i" } }).toArray()
+    : getMemoryStore().hotspots.filter((h) => h.title.toLowerCase().includes(q));
+
+  if (hotspots.length > 0) {
+    const matchedImageIds = new Set(hotspots.map((h) => h.shoppableImageId));
+    const allImages = await listShoppableImages();
+    for (const image of allImages) {
+      if (image.status === "published" && matchedImageIds.has(image._id) && !images.some((i) => i._id === image._id)) {
+        images.push(image);
+      }
+    }
+  }
+
+  return { images };
 }
 
 export interface AnalyticsSummary {
