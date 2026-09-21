@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Stage, Layer, Image as KonvaImage, Circle, Transformer } from "react-konva";
+import { Stage, Layer, Image as KonvaImage, Circle, Group, Transformer } from "react-konva";
 import useImage from "use-image";
 import type Konva from "konva";
 import type { Hotspot, ShoppableImage } from "@/types";
@@ -54,6 +54,7 @@ export function HotspotEditor({
             y: hotspot.y,
             width: hotspot.width,
             height: hotspot.height,
+            rotation: hotspot.rotation,
           }),
         });
         setSaveState(res.ok ? "saved" : "error");
@@ -114,45 +115,67 @@ export function HotspotEditor({
 
               {hotspots
                 .filter((h) => h.isActive)
-                .map((hotspot) => (
-                  <Circle
-                    key={hotspot._id}
-                    ref={(node) => {
-                      shapeRefs.current[hotspot._id] = node;
-                    }}
-                    x={hotspot.x * CANVAS_WIDTH}
-                    y={hotspot.y * canvasHeight}
-                    radius={(hotspot.width * CANVAS_WIDTH) / 2}
-                    fill="#5A3D2B"
-                    stroke="#FDF9E3"
-                    strokeWidth={2}
-                    opacity={0.9}
-                    draggable
-                    onClick={() => setSelectedId(hotspot._id)}
-                    onTap={() => setSelectedId(hotspot._id)}
-                    onDragMove={(e) => {
-                      const { x, y } = pixelsToNormalized(
-                        { x: e.target.x(), y: e.target.y(), width: 0, height: 0 },
-                        CANVAS_WIDTH,
-                        canvasHeight
-                      );
-                      updateHotspot(hotspot._id, { x: clamp01(x), y: clamp01(y) });
-                    }}
-                    onTransformEnd={(e) => {
-                      const node = e.target as unknown as Konva.Circle;
-                      const scaleX = node.scaleX();
-                      const newRadius = node.radius() * scaleX;
-                      node.scaleX(1);
-                      node.scaleY(1);
-                      const widthNorm = clamp01((newRadius * 2) / CANVAS_WIDTH);
-                      updateHotspot(hotspot._id, { width: widthNorm, height: widthNorm });
-                    }}
-                  />
-                ))}
+                .map((hotspot) => {
+                  const cx = hotspot.x * CANVAS_WIDTH;
+                  const cy = hotspot.y * canvasHeight;
+                  const radius = (hotspot.width * CANVAS_WIDTH) / 2;
+                  const angleRad = (hotspot.rotation * Math.PI) / 180;
+
+                  return (
+                    <Group key={hotspot._id}>
+                      <Circle
+                        ref={(node) => {
+                          shapeRefs.current[hotspot._id] = node;
+                        }}
+                        x={cx}
+                        y={cy}
+                        radius={radius}
+                        rotation={hotspot.rotation}
+                        fill="#5A3D2B"
+                        stroke="#FDF9E3"
+                        strokeWidth={2}
+                        opacity={0.9}
+                        draggable
+                        onClick={() => setSelectedId(hotspot._id)}
+                        onTap={() => setSelectedId(hotspot._id)}
+                        onDragMove={(e) => {
+                          const { x, y } = pixelsToNormalized(
+                            { x: e.target.x(), y: e.target.y(), width: 0, height: 0 },
+                            CANVAS_WIDTH,
+                            canvasHeight
+                          );
+                          updateHotspot(hotspot._id, { x: clamp01(x), y: clamp01(y) });
+                        }}
+                        onTransformEnd={(e) => {
+                          const node = e.target as unknown as Konva.Circle;
+                          const scaleX = node.scaleX();
+                          const newRadius = node.radius() * scaleX;
+                          const newRotation = Math.round(node.rotation());
+                          node.scaleX(1);
+                          node.scaleY(1);
+                          const widthNorm = clamp01((newRadius * 2) / CANVAS_WIDTH);
+                          updateHotspot(hotspot._id, {
+                            width: widthNorm,
+                            height: widthNorm,
+                            rotation: newRotation,
+                          });
+                        }}
+                      />
+                      {/* direction indicator so rotation is visible on an otherwise-symmetric circle */}
+                      <Circle
+                        x={cx + radius * Math.sin(angleRad)}
+                        y={cy - radius * Math.cos(angleRad)}
+                        radius={3}
+                        fill="#FBBA00"
+                        listening={false}
+                      />
+                    </Group>
+                  );
+                })}
 
               <Transformer
                 ref={transformerRef}
-                rotateEnabled={false}
+                rotateEnabled
                 enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
               />
             </Layer>
@@ -160,7 +183,8 @@ export function HotspotEditor({
         </div>
         <p className="mt-2 text-xs text-brown-soft">
           Scale: {(scale * 100).toFixed(0)}% of source ({image.imageWidth}×{image.imageHeight}px). Drag a dot to
-          move it, resize handles to change its size.
+          move it, corner handles to resize, the top handle to rotate — the small yellow dot shows which way it
+          faces.
         </p>
       </div>
 
@@ -177,6 +201,7 @@ export function HotspotEditor({
         ) : selectedId ? (
           <SelectedHotspotDetails
             hotspot={hotspots.find((h) => h._id === selectedId) ?? null}
+            onRotate={(rotation) => selectedId && updateHotspot(selectedId, { rotation })}
           />
         ) : (
           <p className="text-sm text-brown-soft">Select a hotspot to see its details, or add a new product.</p>
@@ -199,13 +224,37 @@ function ToolButton({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
-function SelectedHotspotDetails({ hotspot }: { hotspot: Hotspot | null }) {
+function SelectedHotspotDetails({
+  hotspot,
+  onRotate,
+}: {
+  hotspot: Hotspot | null;
+  onRotate: (rotation: number) => void;
+}) {
   if (!hotspot) return null;
   return (
     <div className="rounded-xl border border-brown/10 bg-white/40 p-4 text-sm">
       <p className="font-semibold text-brown">{hotspot.title}</p>
       {hotspot.description && <p className="mt-1 text-brown-soft">{hotspot.description}</p>}
       <p className="mt-2 break-all text-xs text-brown-soft">{hotspot.affiliateUrl}</p>
+
+      <label className="mt-4 block">
+        <span className="mb-1 flex items-center justify-between text-xs text-brown-soft">
+          <span>Rotation</span>
+          <span>{Math.round(hotspot.rotation)}°</span>
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={359}
+          value={Math.round(hotspot.rotation)}
+          onChange={(e) => onRotate(Number(e.target.value))}
+          className="w-full accent-orange"
+        />
+      </label>
+      <p className="mt-1 text-[11px] text-brown-soft">
+        Or drag the handle above the hotspot on the canvas to rotate it by hand.
+      </p>
     </div>
   );
 }

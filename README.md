@@ -107,7 +107,7 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 - `/go/[hotspotId]` affiliate redirect: server-side URL validation (http/https only), records a click event, then redirects
 - View tracking on shoppable image pages (device/browser/OS parsed from the user agent, session cookie)
 - Admin: email/password login (single account, env-configured), protected `/admin/*` routes via `src/proxy.ts`
-- Admin overview, shoppable images list, and a Canva-like hotspot editor (React Konva: drag, resize via Transformer, add/delete hotspots, autosave, publish/unpublish)
+- Admin overview, shoppable images list, and a Canva-like hotspot editor (React Konva: drag, resize + rotate via Transformer or a precise rotation slider, add/delete hotspots, autosave, publish/unpublish)
 - Analytics dashboard: totals, CTR, clicks/views over time chart, top products, device breakdown
 - Coordinate system: all hotspot positions are normalized (0–1) relative to the source image — see `src/lib/coordinates.ts` and its tests
 - Data layer that transparently uses MongoDB when `MONGODB_URI` is set and reachable, or an in-memory store seeded with demo data otherwise (`src/lib/data.ts`)
@@ -123,7 +123,7 @@ Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to s
 - **Categories are read-only in the UI** — there's no admin screen to create/edit/reorder them yet (the data model and seed data support it).
 - **Analytics aggregation happens in Node**, not via MongoDB aggregation pipelines — fine at demo scale, would need revisiting for real traffic volume.
 - **Favorites page is a stub** — no persistence.
-- Rotation isn't exposed in the editor UI yet (the data model supports it; only resize/drag are wired to Konva controls).
+- **Hotspot shape is a fixed circle.** Rotation is fully supported (drag the Transformer's rotate handle, or use the rotation slider) and persists correctly, but a circle looks the same at any angle — a small yellow dot marks which way it "faces" so the rotation is visible while editing.
 
 ## Deploying
 
