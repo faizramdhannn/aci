@@ -5,8 +5,10 @@
  *
  * Usage: npm run seed
  */
-import "dotenv/config";
+import { config } from "dotenv";
 import { MongoClient, type Document } from "mongodb";
+
+config({ path: ".env.local" });
 import {
   seedCategories,
   seedClickEvents,
