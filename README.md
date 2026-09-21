@@ -110,6 +110,9 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 - Image upload: drag-and-drop or file picker, validated server-side (type + 8MB size limit), saved to `public/uploads/` locally or Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set (`src/lib/storage.ts`) — used both when creating a new look and to replace an existing look's photo from the editor
 - Admin overview, shoppable images list, and a Canva-like hotspot editor (React Konva: drag, resize + rotate via Transformer or a precise rotation slider, add/delete hotspots, autosave, publish/unpublish)
 - Analytics dashboard: totals, CTR, clicks/views over time chart, top products, device breakdown
+- Click heatmap per look (`/admin/shoppable-images/[id]/heatmap`): overlays each product's click count as a heat blob at its hotspot position — an approximation, since clicks are tracked per-hotspot rather than by raw pointer coordinate (see Known limitations)
+- Category management (`/admin/categories`): create, rename, reorder (used as the public sort order), archive/restore, delete
+- Site search (`/search`): matches shoppable image titles/descriptions and product (hotspot) names, case-insensitive; linked from the desktop top bar and a compact mobile search button
 - Coordinate system: all hotspot positions are normalized (0–1) relative to the source image — see `src/lib/coordinates.ts` and its tests
 - Data layer that transparently uses MongoDB when `MONGODB_URI` is set and reachable, or an in-memory store seeded with demo data otherwise (`src/lib/data.ts`)
 
@@ -118,9 +121,8 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to ship a working MVP:
 
 - **Single admin account only**, configured via env vars — no multi-user/multi-tenant support, no signup flow.
-- **No heatmap visualization** of click density over the photo (click `clickX`/`clickY` are captured in the data model but nothing renders them as a heatmap yet).
-- **No search implementation** — the search links in the nav currently just go to `/shop`.
-- **Categories are read-only in the UI** — there's no admin screen to create/edit/reorder them yet (the data model and seed data support it).
+- **Heatmap is per-hotspot, not per-pixel.** The "Shop product" CTA is a plain link (not a coordinate-tracked click), so the heatmap shows which *product* got clicked, placed at that hotspot's fixed position — not a true density map of exactly where on the photo people clicked. The `clickX`/`clickY` fields exist in the data model for that finer-grained version, just not populated yet.
+- **Search is a simple substring match** (`$regex` in Mongo, `.includes()` in the in-memory fallback) — fine at this scale, not a real search engine (no ranking, typo tolerance, etc).
 - **Analytics aggregation happens in Node**, not via MongoDB aggregation pipelines — fine at demo scale, would need revisiting for real traffic volume.
 - **Favorites page is a stub** — no persistence.
 - **Hotspot shape is a fixed circle.** Rotation is fully supported (drag the Transformer's rotate handle, or use the rotation slider) and persists correctly, but a circle looks the same at any angle — a small yellow dot marks which way it "faces" so the rotation is visible while editing.
