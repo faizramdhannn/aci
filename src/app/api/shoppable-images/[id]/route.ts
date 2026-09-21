@@ -7,6 +7,9 @@ const patchSchema = z.object({
   status: z.enum(["draft", "published"]).optional(),
   title: z.string().min(1).optional(),
   description: z.string().optional(),
+  imageUrl: z.string().min(1).optional(),
+  imageWidth: z.number().int().positive().optional(),
+  imageHeight: z.number().int().positive().optional(),
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
