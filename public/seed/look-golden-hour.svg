@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1350" viewBox="0 0 900 1350">
+  <rect width="900" height="1350" fill="#5A3D2B"/>
+  <circle cx="700" cy="260" r="200" fill="#FBBA00" opacity="0.5"/>
+  <!-- hijab -->
+  <path d="M450 220 C340 220 270 330 280 450 C285 530 305 610 335 665 L565 665 C595 610 615 530 620 450 C630 330 560 220 450 220 Z" fill="#E5781E"/>
+  <!-- face -->
+  <ellipse cx="450" cy="440" rx="105" ry="125" fill="#E9C9A6"/>
+  <rect x="412" y="535" width="76" height="65" fill="#E9C9A6"/>
+  <!-- top -->
+  <path d="M310 665 C310 665 345 755 450 755 C555 755 590 665 590 665 L625 990 L275 990 Z" fill="#FDF9E3"/>
+  <!-- pants -->
+  <rect x="335" y="990" width="230" height="270" fill="#FBBA00"/>
+  <!-- watch accent -->
+  <circle cx="600" cy="900" r="18" fill="#FDF9E3"/>
+  <!-- shoes -->
+  <ellipse cx="385" cy="1300" rx="52" ry="22" fill="#FDF9E3"/>
+  <ellipse cx="515" cy="1300" rx="52" ry="22" fill="#FDF9E3"/>
+</svg>

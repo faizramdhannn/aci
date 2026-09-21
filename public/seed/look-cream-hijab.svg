@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="1350" viewBox="0 0 900 1350">
+  <rect width="900" height="1350" fill="#FBBA00"/>
+  <ellipse cx="450" cy="1350" rx="520" ry="220" fill="#E5781E" opacity="0.25"/>
+  <!-- hair/hijab -->
+  <path d="M450 210 C330 210 260 320 270 440 C275 520 300 600 330 660 L570 660 C600 600 625 520 630 440 C640 320 570 210 450 210 Z" fill="#FDF9E3"/>
+  <!-- face -->
+  <ellipse cx="450" cy="430" rx="110" ry="130" fill="#E9C9A6"/>
+  <!-- neck -->
+  <rect x="410" y="530" width="80" height="70" fill="#E9C9A6"/>
+  <!-- shirt/top -->
+  <path d="M300 660 C300 660 340 760 450 760 C560 760 600 660 600 660 L640 1000 L260 1000 Z" fill="#5A3D2B"/>
+  <!-- pants -->
+  <rect x="330" y="1000" width="240" height="260" fill="#E5781E"/>
+  <!-- bag -->
+  <ellipse cx="640" cy="900" rx="60" ry="70" fill="#5A3D2B" opacity="0.85"/>
+  <!-- shoes -->
+  <ellipse cx="380" cy="1290" rx="55" ry="24" fill="#5A3D2B"/>
+  <ellipse cx="520" cy="1290" rx="55" ry="24" fill="#5A3D2B"/>
+</svg>

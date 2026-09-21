@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  --color-cream: #fdf9e3;
+  --color-cream-soft: #f6efd2;
+  --color-yellow: #fbba00;
+  --color-orange: #e5781e;
+  --color-brown: #5a3d2b;
+  --color-brown-soft: #8a6a54;
+
+  --background: var(--color-cream);
+  --foreground: var(--color-brown);
+}
+
+@theme inline {
+  --color-cream: var(--color-cream);
+  --color-cream-soft: var(--color-cream-soft);
+  --color-yellow: var(--color-yellow);
+  --color-orange: var(--color-orange);
+  --color-brown: var(--color-brown);
+  --color-brown-soft: var(--color-brown-soft);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-manrope);
+  --font-display: var(--font-caveat);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+.glass {
+  background: color-mix(in srgb, var(--color-cream) 55%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid color-mix(in srgb, var(--color-brown) 12%, transparent);
+}
+
+.glass-dark {
+  background: color-mix(in srgb, var(--color-brown) 78%, transparent);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid color-mix(in srgb, var(--color-cream) 18%, transparent);
+}
