@@ -3,6 +3,8 @@ import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
 import { listShoppableImages } from "@/lib/data";
 
+export const dynamic = "force-dynamic";
+
 export default async function ShopPage() {
   const images = (await listShoppableImages()).filter((i) => i.status === "published");
 

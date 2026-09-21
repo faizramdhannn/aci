@@ -2,6 +2,8 @@ import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
 import { listCategories } from "@/lib/data";
 
+export const dynamic = "force-dynamic";
+
 export default async function CategoriesPage() {
   const categories = await listCategories();
 
