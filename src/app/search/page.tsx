@@ -1,9 +1,15 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
 import { searchContent } from "@/lib/data";
 
 type SearchParams = Promise<{ q?: string }>;
+
+export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
+  const { q } = await searchParams;
+  return { title: q?.trim() ? `Search: ${q.trim()}` : "Search" };
+}
 
 export default async function SearchPage({ searchParams }: { searchParams: SearchParams }) {
   const { q } = await searchParams;
@@ -21,7 +27,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
             defaultValue={query}
             autoFocus
             placeholder="Search looks and products…"
-            className="w-full rounded-full border border-brown/20 bg-white/50 px-5 py-3 text-lg outline-none focus:border-orange"
+            className="w-full rounded-full border border-brown/20 bg-surface/80 px-5 py-3 text-lg outline-none focus:border-orange"
           />
         </form>
 

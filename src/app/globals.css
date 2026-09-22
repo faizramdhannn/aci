@@ -7,6 +7,34 @@
   --color-orange: #e5781e;
   --color-brown: #5a3d2b;
   --color-brown-soft: #8a6a54;
+  --color-surface: #ffffff;
+
+  --background: var(--color-cream);
+  --foreground: var(--color-brown);
+}
+
+/* Dark mode: same warm palette, inverted surfaces. Respects the OS
+   preference by default; .light / .dark on <html> (set by ThemeToggle)
+   overrides it explicitly and persists via localStorage. */
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --color-cream: #211712;
+    --color-cream-soft: #2b1e17;
+    --color-brown: #f3e6d8;
+    --color-brown-soft: #c9ab93;
+    --color-surface: #2b1e17;
+
+    --background: var(--color-cream);
+    --foreground: var(--color-brown);
+  }
+}
+
+:root.dark {
+  --color-cream: #211712;
+  --color-cream-soft: #2b1e17;
+  --color-brown: #f3e6d8;
+  --color-brown-soft: #c9ab93;
+  --color-surface: #2b1e17;
 
   --background: var(--color-cream);
   --foreground: var(--color-brown);
@@ -19,6 +47,7 @@
   --color-orange: var(--color-orange);
   --color-brown: var(--color-brown);
   --color-brown-soft: var(--color-brown-soft);
+  --color-surface: var(--color-surface);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-manrope);
@@ -29,6 +58,7 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
 @media (prefers-reduced-motion: reduce) {

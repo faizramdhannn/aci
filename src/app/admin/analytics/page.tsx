@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import { getAnalyticsSummary } from "@/lib/data";
 import { ClicksChart } from "@/components/analytics/clicks-chart";
 
+export const metadata: Metadata = { title: "Analytics" };
 export const dynamic = "force-dynamic";
 
 export default async function AnalyticsPage() {
@@ -17,13 +19,13 @@ export default async function AnalyticsPage() {
         <Stat label="Unique Sessions" value={summary.uniqueSessions} />
       </div>
 
-      <div className="mb-8 rounded-xl border border-brown/10 bg-white/40 p-4">
+      <div className="mb-8 rounded-xl border border-brown/10 bg-surface/70 p-4">
         <h2 className="mb-3 text-sm font-semibold text-brown">Clicks &amp; views over time</h2>
         <ClicksChart data={summary.clicksOverTime} />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div className="rounded-xl border border-brown/10 bg-white/40 p-4">
+        <div className="rounded-xl border border-brown/10 bg-surface/70 p-4">
           <h2 className="mb-3 text-sm font-semibold text-brown">Top products</h2>
           {summary.topHotspots.length === 0 ? (
             <p className="text-sm text-brown-soft">No clicks recorded yet.</p>
@@ -39,7 +41,7 @@ export default async function AnalyticsPage() {
           )}
         </div>
 
-        <div className="rounded-xl border border-brown/10 bg-white/40 p-4">
+        <div className="rounded-xl border border-brown/10 bg-surface/70 p-4">
           <h2 className="mb-3 text-sm font-semibold text-brown">Clicks by device</h2>
           {summary.clicksByDevice.length === 0 ? (
             <p className="text-sm text-brown-soft">No clicks recorded yet.</p>
@@ -61,7 +63,7 @@ export default async function AnalyticsPage() {
 
 function Stat({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-brown/10 bg-white/40 p-4">
+    <div className="rounded-xl border border-brown/10 bg-surface/70 p-4">
       <p className="text-xs uppercase tracking-wide text-brown-soft">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-brown">{value}</p>
     </div>

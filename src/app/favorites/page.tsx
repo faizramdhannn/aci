@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
+
+export const metadata: Metadata = { title: "Favorites" };
 
 export default function FavoritesPage() {
   return (

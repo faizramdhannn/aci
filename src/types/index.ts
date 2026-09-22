@@ -33,6 +33,8 @@ export interface Hotspot {
   productImageUrl?: string;
   productPrice?: number;
   marketplace?: MarketplaceName;
+  /** Hex color for the link marker icon, e.g. "#5A3D2B". */
+  color: string;
   /** Normalized 0-1, relative to source image dimensions. */
   x: number;
   y: number;
@@ -41,6 +43,26 @@ export interface Hotspot {
   rotation: number;
   zIndex: number;
   isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ArrowStyle = "straight" | "curved" | "spiral";
+
+export interface Annotation {
+  _id: string;
+  shoppableImageId: string;
+  ownerId: string;
+  kind: "arrow";
+  style: ArrowStyle;
+  color: string;
+  strokeWidth: number;
+  /** Normalized 0-1 start/end points, relative to source image dimensions. */
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  rotation: number;
   createdAt: string;
   updatedAt: string;
 }

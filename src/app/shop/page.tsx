@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
+import type { Metadata } from "next";
 import { listShoppableImages } from "@/lib/data";
 
+export const metadata: Metadata = { title: "Shop" };
 export const dynamic = "force-dynamic";
 
 export default async function ShopPage() {

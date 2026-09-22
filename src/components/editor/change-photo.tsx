@@ -36,7 +36,7 @@ export function ChangePhoto({ imageId }: { imageId: string }) {
   }
 
   return (
-    <div className="rounded-xl border border-brown/10 bg-white/40 p-4">
+    <div className="rounded-xl border border-brown/10 bg-surface/70 p-4">
       <div className="mb-3 flex items-center justify-between">
         <p className="text-sm font-semibold text-brown">Replace this photo</p>
         <button onClick={() => setOpen(false)} className="text-xs text-brown-soft hover:text-brown">

@@ -11,6 +11,7 @@ const bodySchema = z.object({
   imageWidth: z.number().int().positive().default(900),
   imageHeight: z.number().int().positive().default(1350),
   description: z.string().optional(),
+  categoryIds: z.array(z.string()).default([]),
 });
 
 function slugify(title: string) {
@@ -46,7 +47,7 @@ export async function POST(request: Request) {
     imageUrl: parsed.data.imageUrl,
     imageWidth: parsed.data.imageWidth,
     imageHeight: parsed.data.imageHeight,
-    categoryIds: [],
+    categoryIds: parsed.data.categoryIds,
     status: "draft",
     createdAt: now,
     updatedAt: now,

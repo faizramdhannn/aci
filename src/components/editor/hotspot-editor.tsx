@@ -1,27 +1,39 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Stage, Layer, Image as KonvaImage, Circle, Group, Transformer } from "react-konva";
+import { Stage, Layer, Image as KonvaImage, Circle, Arrow, Group, Transformer } from "react-konva";
 import useImage from "use-image";
 import type Konva from "konva";
-import type { Hotspot, ShoppableImage } from "@/types";
+import type { Annotation, ArrowStyle, Hotspot, ShoppableImage } from "@/types";
 import { clamp01, pixelsToNormalized } from "@/lib/coordinates";
+import { buildArrowPoints, toFlatPoints } from "@/lib/arrow-shapes";
+import { AddProductModal } from "@/components/editor/add-product-modal";
 
 const CANVAS_WIDTH = 480;
+const ARROW_COLORS = ["#5A3D2B", "#E5781E", "#FBBA00", "#2B1E17", "#FDF9E3"];
 
 type SaveState = "saved" | "saving" | "unsaved" | "error";
+type Tool = "select" | "add-product" | "add-arrow";
+type Selection = { kind: "hotspot" | "arrow"; id: string } | null;
 
 export function HotspotEditor({
   image,
   initialHotspots,
+  initialAnnotations,
 }: {
   image: ShoppableImage;
   initialHotspots: Hotspot[];
+  initialAnnotations: Annotation[];
 }) {
   const [hotspots, setHotspots] = useState(initialHotspots);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [annotations, setAnnotations] = useState(initialAnnotations);
+  const [selected, setSelected] = useState<Selection>(null);
   const [saveState, setSaveState] = useState<SaveState>("saved");
-  const [showAddForm, setShowAddForm] = useState(false);
+  const [tool, setTool] = useState<Tool>("select");
+  const [arrowStyle, setArrowStyle] = useState<ArrowStyle>("straight");
+  const [arrowColor, setArrowColor] = useState(ARROW_COLORS[0]);
+  const [arrowWidth, setArrowWidth] = useState(4);
+  const [drawing, setDrawing] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   const [bgImage] = useImage(image.imageUrl);
 
   const canvasHeight = Math.round((CANVAS_WIDTH * image.imageHeight) / image.imageWidth);
@@ -32,15 +44,15 @@ export function HotspotEditor({
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (selectedId && transformerRef.current && shapeRefs.current[selectedId]) {
-      transformerRef.current.nodes([shapeRefs.current[selectedId]!]);
+    if (selected?.kind === "hotspot" && transformerRef.current && shapeRefs.current[selected.id]) {
+      transformerRef.current.nodes([shapeRefs.current[selected.id]!]);
       transformerRef.current.getLayer()?.batchDraw();
     } else {
       transformerRef.current?.nodes([]);
     }
-  }, [selectedId]);
+  }, [selected]);
 
-  const scheduleSave = useCallback((hotspot: Hotspot) => {
+  const scheduleSaveHotspot = useCallback((hotspot: Hotspot) => {
     setSaveState("unsaved");
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(async () => {
@@ -55,6 +67,7 @@ export function HotspotEditor({
             width: hotspot.width,
             height: hotspot.height,
             rotation: hotspot.rotation,
+            color: hotspot.color,
           }),
         });
         setSaveState(res.ok ? "saved" : "error");
@@ -64,32 +77,109 @@ export function HotspotEditor({
     }, 900);
   }, []);
 
+  const scheduleSaveAnnotation = useCallback((annotation: Annotation) => {
+    setSaveState("unsaved");
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      setSaveState("saving");
+      try {
+        const res = await fetch(`/api/annotations/${annotation._id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            shoppableImageId: image._id,
+            x1: annotation.x1,
+            y1: annotation.y1,
+            x2: annotation.x2,
+            y2: annotation.y2,
+            color: annotation.color,
+            strokeWidth: annotation.strokeWidth,
+            style: annotation.style,
+          }),
+        });
+        setSaveState(res.ok ? "saved" : "error");
+      } catch {
+        setSaveState("error");
+      }
+    }, 900);
+  }, [image._id]);
+
   function updateHotspot(id: string, patch: Partial<Hotspot>) {
     setHotspots((prev) => {
       const next = prev.map((h) => (h._id === id ? { ...h, ...patch } : h));
       const updated = next.find((h) => h._id === id);
-      if (updated) scheduleSave(updated);
+      if (updated) scheduleSaveHotspot(updated);
+      return next;
+    });
+  }
+
+  function updateAnnotation(id: string, patch: Partial<Annotation>) {
+    setAnnotations((prev) => {
+      const next = prev.map((a) => (a._id === id ? { ...a, ...patch } : a));
+      const updated = next.find((a) => a._id === id);
+      if (updated) scheduleSaveAnnotation(updated);
       return next;
     });
   }
 
   async function deleteSelected() {
-    if (!selectedId) return;
-    const id = selectedId;
-    setHotspots((prev) => prev.filter((h) => h._id !== id));
-    setSelectedId(null);
-    await fetch(`/api/hotspots/${id}`, { method: "DELETE" });
+    if (!selected) return;
+    if (selected.kind === "hotspot") {
+      setHotspots((prev) => prev.filter((h) => h._id !== selected.id));
+      await fetch(`/api/hotspots/${selected.id}`, { method: "DELETE" });
+    } else {
+      setAnnotations((prev) => prev.filter((a) => a._id !== selected.id));
+      await fetch(`/api/annotations/${selected.id}`, { method: "DELETE" });
+    }
+    setSelected(null);
+  }
+
+  function stagePointToNormalized(stage: Konva.Stage) {
+    const pos = stage.getPointerPosition();
+    if (!pos) return null;
+    return pixelsToNormalized({ x: pos.x, y: pos.y, width: 0, height: 0 }, CANVAS_WIDTH, canvasHeight);
+  }
+
+  async function finishDrawing() {
+    if (!drawing) return;
+    const payload = {
+      shoppableImageId: image._id,
+      style: arrowStyle,
+      color: arrowColor,
+      strokeWidth: arrowWidth / CANVAS_WIDTH,
+      x1: clamp01(drawing.x1),
+      y1: clamp01(drawing.y1),
+      x2: clamp01(drawing.x2),
+      y2: clamp01(drawing.y2),
+    };
+    setDrawing(null);
+    setTool("select");
+
+    // Ignore accidental clicks with no real drag.
+    if (Math.hypot(payload.x2 - payload.x1, payload.y2 - payload.y1) < 0.01) return;
+
+    const res = await fetch("/api/annotations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (res.ok) {
+      const annotation = await res.json();
+      setAnnotations((prev) => [...prev, annotation]);
+      setSelected({ kind: "arrow", id: annotation._id });
+    }
   }
 
   return (
     <div className="grid gap-6 md:grid-cols-[auto_260px]">
       <div>
-        <div className="mb-3 flex items-center gap-2">
-          <ToolButton active={!showAddForm} label="Select" onClick={() => setShowAddForm(false)} />
-          <ToolButton active={showAddForm} label="Add Product" onClick={() => setShowAddForm(true)} />
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <ToolButton active={tool === "select"} label="Select" onClick={() => setTool("select")} />
+          <ToolButton active={tool === "add-product"} label="Add Product" onClick={() => setTool("add-product")} />
+          <ToolButton active={tool === "add-arrow"} label="Add Arrow" onClick={() => setTool("add-arrow")} />
           <button
             onClick={deleteSelected}
-            disabled={!selectedId}
+            disabled={!selected}
             className="rounded-full border border-brown/20 px-3 py-1.5 text-xs font-medium text-brown-soft transition-colors hover:text-orange disabled:opacity-40"
           >
             Delete
@@ -102,16 +192,120 @@ export function HotspotEditor({
           </span>
         </div>
 
+        {tool === "add-arrow" && (
+          <ArrowToolbar
+            style={arrowStyle}
+            onStyle={setArrowStyle}
+            color={arrowColor}
+            onColor={setArrowColor}
+            width={arrowWidth}
+            onWidth={setArrowWidth}
+          />
+        )}
+
         <div className="overflow-hidden rounded-xl border border-brown/10 bg-brown/5" style={{ width: CANVAS_WIDTH }}>
           <Stage
             width={CANVAS_WIDTH}
             height={canvasHeight}
+            style={{ cursor: tool === "add-arrow" ? "crosshair" : "default" }}
             onMouseDown={(e) => {
-              if (e.target === e.target.getStage()) setSelectedId(null);
+              if (tool === "add-arrow") {
+                const p = stagePointToNormalized(e.target.getStage()!);
+                if (p) setDrawing({ x1: p.x, y1: p.y, x2: p.x, y2: p.y });
+                return;
+              }
+              if (e.target === e.target.getStage()) setSelected(null);
+            }}
+            onMouseMove={(e) => {
+              if (tool === "add-arrow" && drawing) {
+                const p = stagePointToNormalized(e.target.getStage()!);
+                if (p) setDrawing((d) => (d ? { ...d, x2: p.x, y2: p.y } : d));
+              }
+            }}
+            onMouseUp={() => {
+              if (tool === "add-arrow" && drawing) finishDrawing();
             }}
           >
             <Layer>
               {bgImage && <KonvaImage image={bgImage} width={CANVAS_WIDTH} height={canvasHeight} />}
+
+              {annotations.map((a) => {
+                const points = toFlatPoints(
+                  buildArrowPoints(a.style, { x: a.x1, y: a.y1 }, { x: a.x2, y: a.y2 })
+                ).map((v, i) => (i % 2 === 0 ? v * CANVAS_WIDTH : v * canvasHeight));
+                const strokeWidthPx = a.strokeWidth * CANVAS_WIDTH;
+
+                return (
+                  <Group key={a._id}>
+                    <Arrow
+                      points={points}
+                      stroke={a.color}
+                      fill={a.color}
+                      strokeWidth={strokeWidthPx}
+                      pointerLength={strokeWidthPx * 3}
+                      pointerWidth={strokeWidthPx * 3}
+                      lineCap="round"
+                      hitStrokeWidth={16}
+                      onClick={() => tool === "select" && setSelected({ kind: "arrow", id: a._id })}
+                      onTap={() => tool === "select" && setSelected({ kind: "arrow", id: a._id })}
+                    />
+                    {selected?.kind === "arrow" && selected.id === a._id && (
+                      <>
+                        <Circle
+                          x={a.x1 * CANVAS_WIDTH}
+                          y={a.y1 * canvasHeight}
+                          radius={6}
+                          fill="#FDF9E3"
+                          stroke={a.color}
+                          strokeWidth={2}
+                          draggable
+                          onDragMove={(e) => {
+                            const p = pixelsToNormalized(
+                              { x: e.target.x(), y: e.target.y(), width: 0, height: 0 },
+                              CANVAS_WIDTH,
+                              canvasHeight
+                            );
+                            updateAnnotation(a._id, { x1: clamp01(p.x), y1: clamp01(p.y) });
+                          }}
+                        />
+                        <Circle
+                          x={a.x2 * CANVAS_WIDTH}
+                          y={a.y2 * canvasHeight}
+                          radius={6}
+                          fill={a.color}
+                          stroke="#FDF9E3"
+                          strokeWidth={2}
+                          draggable
+                          onDragMove={(e) => {
+                            const p = pixelsToNormalized(
+                              { x: e.target.x(), y: e.target.y(), width: 0, height: 0 },
+                              CANVAS_WIDTH,
+                              canvasHeight
+                            );
+                            updateAnnotation(a._id, { x2: clamp01(p.x), y2: clamp01(p.y) });
+                          }}
+                        />
+                      </>
+                    )}
+                  </Group>
+                );
+              })}
+
+              {drawing && (
+                <Arrow
+                  points={toFlatPoints(
+                    buildArrowPoints(arrowStyle, { x: drawing.x1, y: drawing.y1 }, { x: drawing.x2, y: drawing.y2 })
+                  ).map((v, i) => (i % 2 === 0 ? v * CANVAS_WIDTH : v * canvasHeight))}
+                  stroke={arrowColor}
+                  fill={arrowColor}
+                  strokeWidth={arrowWidth}
+                  pointerLength={arrowWidth * 3}
+                  pointerWidth={arrowWidth * 3}
+                  lineCap="round"
+                  opacity={0.8}
+                  listening={false}
+                />
+              )}
 
               {hotspots
                 .filter((h) => h.isActive)
@@ -131,13 +325,13 @@ export function HotspotEditor({
                         y={cy}
                         radius={radius}
                         rotation={hotspot.rotation}
-                        fill="#5A3D2B"
+                        fill={hotspot.color}
                         stroke="#FDF9E3"
                         strokeWidth={2}
                         opacity={0.9}
-                        draggable
-                        onClick={() => setSelectedId(hotspot._id)}
-                        onTap={() => setSelectedId(hotspot._id)}
+                        draggable={tool === "select"}
+                        onClick={() => tool === "select" && setSelected({ kind: "hotspot", id: hotspot._id })}
+                        onTap={() => tool === "select" && setSelected({ kind: "hotspot", id: hotspot._id })}
                         onDragMove={(e) => {
                           const { x, y } = pixelsToNormalized(
                             { x: e.target.x(), y: e.target.y(), width: 0, height: 0 },
@@ -182,31 +376,44 @@ export function HotspotEditor({
           </Stage>
         </div>
         <p className="mt-2 text-xs text-brown-soft">
-          Scale: {(scale * 100).toFixed(0)}% of source ({image.imageWidth}×{image.imageHeight}px). Drag a dot to
-          move it, corner handles to resize, the top handle to rotate — the small yellow dot shows which way it
-          faces.
+          Scale: {(scale * 100).toFixed(0)}% of source ({image.imageWidth}×{image.imageHeight}px).{" "}
+          {tool === "add-arrow"
+            ? "Click and drag on the photo to draw an arrow."
+            : "Drag a dot to move it, corner handles to resize, the top handle to rotate."}
         </p>
       </div>
 
       <div>
-        {showAddForm ? (
-          <AddProductForm
-            shoppableImageId={image._id}
-            onCreated={(hotspot) => {
-              setHotspots((prev) => [...prev, hotspot]);
-              setShowAddForm(false);
-              setSelectedId(hotspot._id);
-            }}
-          />
-        ) : selectedId ? (
+        {selected?.kind === "hotspot" ? (
           <SelectedHotspotDetails
-            hotspot={hotspots.find((h) => h._id === selectedId) ?? null}
-            onRotate={(rotation) => selectedId && updateHotspot(selectedId, { rotation })}
+            hotspot={hotspots.find((h) => h._id === selected.id) ?? null}
+            onRotate={(rotation) => updateHotspot(selected.id, { rotation })}
+            onColor={(color) => updateHotspot(selected.id, { color })}
+          />
+        ) : selected?.kind === "arrow" ? (
+          <SelectedArrowDetails
+            annotation={annotations.find((a) => a._id === selected.id) ?? null}
+            onColor={(color) => updateAnnotation(selected.id, { color })}
+            onWidth={(px) => updateAnnotation(selected.id, { strokeWidth: px / CANVAS_WIDTH })}
           />
         ) : (
-          <p className="text-sm text-brown-soft">Select a hotspot to see its details, or add a new product.</p>
+          <p className="text-sm text-brown-soft">
+            Select a hotspot or arrow to see its details, add a new product, or draw an arrow.
+          </p>
         )}
       </div>
+
+      {tool === "add-product" && (
+        <AddProductModal
+          shoppableImageId={image._id}
+          onClose={() => setTool("select")}
+          onCreated={(hotspot) => {
+            setHotspots((prev) => [...prev, hotspot]);
+            setTool("select");
+            setSelected({ kind: "hotspot", id: hotspot._id });
+          }}
+        />
+      )}
     </div>
   );
 }
@@ -224,19 +431,102 @@ function ToolButton({ label, active, onClick }: { label: string; active: boolean
   );
 }
 
+function ColorSwatches({ value, onChange }: { value: string; onChange: (color: string) => void }) {
+  return (
+    <div className="flex items-center gap-1.5">
+      {ARROW_COLORS.map((c) => (
+        <button
+          key={c}
+          type="button"
+          onClick={() => onChange(c)}
+          aria-label={c}
+          className={`h-6 w-6 rounded-full border-2 ${value === c ? "border-orange" : "border-transparent"}`}
+          style={{ background: c }}
+        />
+      ))}
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="h-6 w-6 cursor-pointer rounded-full border border-brown/20 bg-transparent p-0"
+        aria-label="Custom color"
+      />
+    </div>
+  );
+}
+
+function ArrowToolbar({
+  style,
+  onStyle,
+  color,
+  onColor,
+  width,
+  onWidth,
+}: {
+  style: ArrowStyle;
+  onStyle: (s: ArrowStyle) => void;
+  color: string;
+  onColor: (c: string) => void;
+  width: number;
+  onWidth: (w: number) => void;
+}) {
+  const styles: { value: ArrowStyle; label: string }[] = [
+    { value: "straight", label: "Straight" },
+    { value: "curved", label: "Curved" },
+    { value: "spiral", label: "Spiral" },
+  ];
+
+  return (
+    <div className="mb-3 flex flex-wrap items-center gap-4 rounded-xl border border-brown/10 bg-surface/70 p-3">
+      <div className="flex items-center gap-1">
+        {styles.map((s) => (
+          <button
+            key={s.value}
+            onClick={() => onStyle(s.value)}
+            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              style === s.value ? "bg-brown text-cream" : "border border-brown/20 text-brown-soft hover:text-brown"
+            }`}
+          >
+            {s.label}
+          </button>
+        ))}
+      </div>
+      <ColorSwatches value={color} onChange={onColor} />
+      <label className="flex items-center gap-2 text-xs text-brown-soft">
+        Size
+        <input
+          type="range"
+          min={2}
+          max={12}
+          value={width}
+          onChange={(e) => onWidth(Number(e.target.value))}
+          className="accent-orange"
+        />
+      </label>
+    </div>
+  );
+}
+
 function SelectedHotspotDetails({
   hotspot,
   onRotate,
+  onColor,
 }: {
   hotspot: Hotspot | null;
   onRotate: (rotation: number) => void;
+  onColor: (color: string) => void;
 }) {
   if (!hotspot) return null;
   return (
-    <div className="rounded-xl border border-brown/10 bg-white/40 p-4 text-sm">
+    <div className="rounded-xl border border-brown/10 bg-surface/70 p-4 text-sm">
       <p className="font-semibold text-brown">{hotspot.title}</p>
       {hotspot.description && <p className="mt-1 text-brown-soft">{hotspot.description}</p>}
       <p className="mt-2 break-all text-xs text-brown-soft">{hotspot.affiliateUrl}</p>
+
+      <div className="mt-4">
+        <span className="mb-1 block text-xs text-brown-soft">Marker color</span>
+        <ColorSwatches value={hotspot.color} onChange={onColor} />
+      </div>
 
       <label className="mt-4 block">
         <span className="mb-1 flex items-center justify-between text-xs text-brown-soft">
@@ -259,94 +549,37 @@ function SelectedHotspotDetails({
   );
 }
 
-function AddProductForm({
-  shoppableImageId,
-  onCreated,
+function SelectedArrowDetails({
+  annotation,
+  onColor,
+  onWidth,
 }: {
-  shoppableImageId: string;
-  onCreated: (hotspot: Hotspot) => void;
+  annotation: Annotation | null;
+  onColor: (color: string) => void;
+  onWidth: (px: number) => void;
 }) {
-  const [title, setTitle] = useState("");
-  const [affiliateUrl, setAffiliateUrl] = useState("");
-  const [price, setPrice] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-
-    const res = await fetch("/api/hotspots", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        shoppableImageId,
-        title,
-        affiliateUrl,
-        productPrice: price ? Number(price) : undefined,
-        logoUrl: "/seed/badge-tag.svg",
-        x: 0.5,
-        y: 0.5,
-        width: 0.08,
-        height: 0.08,
-      }),
-    });
-
-    setLoading(false);
-
-    if (!res.ok) {
-      setError("Check the affiliate URL and try again.");
-      return;
-    }
-
-    onCreated(await res.json());
-    setTitle("");
-    setAffiliateUrl("");
-    setPrice("");
-  }
-
+  if (!annotation) return null;
   return (
-    <form onSubmit={onSubmit} className="space-y-3 rounded-xl border border-brown/10 bg-white/40 p-4 text-sm">
-      <p className="font-semibold text-brown">Add a product</p>
-      <label className="block">
-        <span className="mb-1 block text-xs text-brown-soft">Product name</span>
+    <div className="rounded-xl border border-brown/10 bg-surface/70 p-4 text-sm">
+      <p className="font-semibold capitalize text-brown">{annotation.style} arrow</p>
+      <p className="mt-1 text-xs text-brown-soft">Drag either end to move or resize it.</p>
+
+      <div className="mt-4">
+        <span className="mb-1 block text-xs text-brown-soft">Color</span>
+        <ColorSwatches value={annotation.color} onChange={onColor} />
+      </div>
+
+      <label className="mt-4 block">
+        <span className="mb-1 block text-xs text-brown-soft">Thickness</span>
         <input
-          required
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-lg border border-brown/20 bg-cream px-2.5 py-1.5 outline-none focus:border-orange"
+          type="range"
+          min={2}
+          max={12}
+          value={Math.round(annotation.strokeWidth * CANVAS_WIDTH)}
+          onChange={(e) => onWidth(Number(e.target.value))}
+          className="w-full accent-orange"
         />
       </label>
-      <label className="block">
-        <span className="mb-1 block text-xs text-brown-soft">Affiliate URL</span>
-        <input
-          required
-          type="url"
-          value={affiliateUrl}
-          onChange={(e) => setAffiliateUrl(e.target.value)}
-          placeholder="https://…"
-          className="w-full rounded-lg border border-brown/20 bg-cream px-2.5 py-1.5 outline-none focus:border-orange"
-        />
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-xs text-brown-soft">Price (optional, IDR)</span>
-        <input
-          type="number"
-          value={price}
-          onChange={(e) => setPrice(e.target.value)}
-          className="w-full rounded-lg border border-brown/20 bg-cream px-2.5 py-1.5 outline-none focus:border-orange"
-        />
-      </label>
-      {error && <p className="text-xs text-orange">{error}</p>}
-      <button
-        type="submit"
-        disabled={loading}
-        className="w-full rounded-full bg-orange px-3 py-2 text-xs font-semibold text-cream transition-opacity hover:opacity-90 disabled:opacity-60"
-      >
-        {loading ? "Adding…" : "Add to photo"}
-      </button>
-      <p className="text-[11px] text-brown-soft">It&apos;ll drop in the middle — drag it onto the right spot after.</p>
-    </form>
+    </div>
   );
 }

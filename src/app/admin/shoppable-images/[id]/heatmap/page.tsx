@@ -1,9 +1,18 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { getShoppableImageById, getHeatmapForImage } from "@/lib/data";
 import { ClickHeatmap } from "@/components/analytics/click-heatmap";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ id: string }>;
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { id } = await params;
+  const image = await getShoppableImageById(id);
+  return { title: image ? `${image.title} heatmap` : "Heatmap" };
+}
 
 export default async function HeatmapPage({ params }: { params: Params }) {
   const { id } = await params;
@@ -46,7 +55,7 @@ export default async function HeatmapPage({ params }: { params: Params }) {
       )}
 
       {sorted.length > 0 && (
-        <div className="mt-6 rounded-xl border border-brown/10 bg-white/40 p-4">
+        <div className="mt-6 rounded-xl border border-brown/10 bg-surface/70 p-4">
           <h2 className="mb-3 text-sm font-semibold text-brown">Clicks per product</h2>
           <ul className="space-y-2 text-sm">
             {sorted.map((h) => (

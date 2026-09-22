@@ -10,6 +10,7 @@ const patchSchema = z.object({
   imageUrl: z.string().min(1).optional(),
   imageWidth: z.number().int().positive().optional(),
   imageHeight: z.number().int().positive().optional(),
+  categoryIds: z.array(z.string()).optional(),
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
