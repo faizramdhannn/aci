@@ -1,18 +1,30 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getShoppableImageById, listHotspotsForImage } from "@/lib/data";
+import type { Metadata } from "next";
+import { getShoppableImageById, listHotspotsForImage, listAnnotationsForImage } from "@/lib/data";
 import { HotspotEditor } from "@/components/editor/hotspot-editor";
 import { PublishToggle } from "@/components/editor/publish-toggle";
 import { ChangePhoto } from "@/components/editor/change-photo";
 
+export const dynamic = "force-dynamic";
+
 type Params = Promise<{ id: string }>;
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { id } = await params;
+  const image = await getShoppableImageById(id);
+  return { title: image ? `Edit ${image.title}` : "Edit look" };
+}
 
 export default async function EditShoppableImagePage({ params }: { params: Params }) {
   const { id } = await params;
   const image = await getShoppableImageById(id);
   if (!image) notFound();
 
-  const hotspots = await listHotspotsForImage(image._id);
+  const [hotspots, annotations] = await Promise.all([
+    listHotspotsForImage(image._id),
+    listAnnotationsForImage(image._id),
+  ]);
 
   return (
     <div>
@@ -32,7 +44,7 @@ export default async function EditShoppableImagePage({ params }: { params: Param
           <PublishToggle imageId={image._id} status={image.status} />
         </div>
       </div>
-      <HotspotEditor image={image} initialHotspots={hotspots} />
+      <HotspotEditor image={image} initialHotspots={hotspots} initialAnnotations={annotations} />
     </div>
   );
 }

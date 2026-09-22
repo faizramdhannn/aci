@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/navigation/logo";
 
 const adminNavItems = [
   { label: "Overview", href: "/admin" },
@@ -11,7 +12,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen bg-cream">
       <aside className="hidden w-56 flex-col border-r border-brown/10 px-5 py-6 md:flex">
-        <Link href="/" className="mb-8 font-display text-2xl text-orange">
+        <Link href="/" className="mb-8 flex items-center gap-2 font-display text-2xl text-orange">
+          <Logo size={28} />
           Aci Studio
         </Link>
         <nav className="flex flex-col gap-1 text-sm">
@@ -29,7 +31,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <div className="flex-1">
         <header className="flex items-center justify-between border-b border-brown/10 px-5 py-4 md:hidden">
-          <span className="font-display text-xl text-orange">Aci Studio</span>
+          <span className="flex items-center gap-1.5 font-display text-xl text-orange">
+            <Logo size={22} />
+            Aci Studio
+          </span>
           <nav className="flex gap-3 text-xs text-brown-soft">
             {adminNavItems.map((item) => (
               <Link key={item.href} href={item.href}>

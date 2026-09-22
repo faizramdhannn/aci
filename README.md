@@ -22,6 +22,8 @@ Working MVP. Runs fully offline (no MongoDB, no Vercel Blob) using an in-memory 
 
 No Supabase, Neon, Prisma, or Drizzle.
 
+**Requires Node.js ≥ 20.9** (Next.js 16 won't build on older versions). If `node -v` shows something older and you have [nvm](https://github.com/nvm-sh/nvm), run `nvm use 20` (or 22/24) before the commands below — a couple of the fixes made during development were exactly this ("command not found" / DNS errors that went away once the right Node version was active).
+
 ## Quick start (no setup required)
 
 ```bash
@@ -101,19 +103,24 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 
 ## What's implemented
 
-- Public storefront (`/`, `/shop`, `/categories`, `/favorites`, `/p/[slug]`) with an editorial homepage and a `<ShoppableImage />` component rendering hotspots over a photo
-- Desktop top bar and mobile bottom bar, both with a liquid-glass (`backdrop-filter: blur`) treatment
-- Hotspot interaction: desktop popover, mobile bottom sheet, both showing product info and a "Shop product" CTA
+- Public storefront (`/`, `/shop`, `/categories`, `/favorites`, `/p/[slug]`) with an editorial homepage, an auto-advancing hero carousel (5s interval, dot navigation, pauses correctly via cleanup), and a `<ShoppableImage />` component rendering hotspots over a photo
+- Light/dark mode: follows the OS preference by default, toggle button persists an explicit choice to `localStorage` (`src/components/navigation/theme-toggle.tsx`, `src/app/globals.css`)
+- Desktop top bar and mobile bottom bar, both with a liquid-glass (`backdrop-filter: blur`) treatment, plus a compact mobile top strip with the logo and search
+- Custom logo (`public/aci-logo.png`) used across the top bar, admin sidebar, and login page
+- Per-page browser tab titles via Next's metadata title template (`%s — Aci`), including dynamic ones for shoppable image and search-query pages
+- Search popover: a search icon that expands an inline input beside it (desktop) or a compact button (mobile), submits to `/search`
+- Hotspots link straight to the affiliate URL on click (`/go/[hotspotId]`, opens in a new tab) — no intermediate popup; the marker itself is a small colored SVG "link" badge, color customizable per hotspot
+- Decorative arrow annotations (straight / curved / spiral), drawn like in Canva: pick a style, color, and size, then drag on the photo. Rendered with Konva in the editor and as a plain SVG overlay on the public page (`src/lib/arrow-shapes.ts`)
 - `/go/[hotspotId]` affiliate redirect: server-side URL validation (http/https only), records a click event, then redirects
 - View tracking on shoppable image pages (device/browser/OS parsed from the user agent, session cookie)
 - Admin: email/password login (single account, env-configured), protected `/admin/*` routes via `src/proxy.ts`
 - Image upload: drag-and-drop or file picker, validated server-side (type + 8MB size limit), saved to `public/uploads/` locally or Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set (`src/lib/storage.ts`) — used both when creating a new look and to replace an existing look's photo from the editor
-- Admin overview, shoppable images list, and a Canva-like hotspot editor (React Konva: drag, resize + rotate via Transformer or a precise rotation slider, add/delete hotspots, autosave, publish/unpublish)
+- Admin overview, shoppable images list, and a Canva-like hotspot editor (React Konva: drag, resize + rotate via Transformer or a precise rotation slider, add/delete hotspots, autosave, publish/unpublish). "Add Product" opens as a modal popup with a marker-color picker; "Add Arrow" draws annotations
 - Analytics dashboard: totals, CTR, clicks/views over time chart, top products, device breakdown
 - Click heatmap per look (`/admin/shoppable-images/[id]/heatmap`): overlays each product's click count as a heat blob at its hotspot position — an approximation, since clicks are tracked per-hotspot rather than by raw pointer coordinate (see Known limitations)
-- Category management (`/admin/categories`): create, rename, reorder (used as the public sort order), archive/restore, delete
+- Category management (`/admin/categories`): create, rename, reorder (used as the public sort order), archive/restore, delete, and pick an icon from a curated lucide-react set (`src/components/admin/category-icons.tsx`) — also selectable when uploading a new look
 - Site search (`/search`): matches shoppable image titles/descriptions and product (hotspot) names, case-insensitive; linked from the desktop top bar and a compact mobile search button
-- Coordinate system: all hotspot positions are normalized (0–1) relative to the source image — see `src/lib/coordinates.ts` and its tests
+- Coordinate system: all hotspot and arrow positions are normalized (0–1) relative to the source image — see `src/lib/coordinates.ts` / `src/lib/arrow-shapes.ts` and their tests
 - Data layer that transparently uses MongoDB when `MONGODB_URI` is set and reachable, or an in-memory store seeded with demo data otherwise (`src/lib/data.ts`)
 
 ## Known limitations
@@ -125,7 +132,9 @@ Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to s
 - **Search is a simple substring match** (`$regex` in Mongo, `.includes()` in the in-memory fallback) — fine at this scale, not a real search engine (no ranking, typo tolerance, etc).
 - **Analytics aggregation happens in Node**, not via MongoDB aggregation pipelines — fine at demo scale, would need revisiting for real traffic volume.
 - **Favorites page is a stub** — no persistence.
-- **Hotspot shape is a fixed circle.** Rotation is fully supported (drag the Transformer's rotate handle, or use the rotation slider) and persists correctly, but a circle looks the same at any angle — a small yellow dot marks which way it "faces" so the rotation is visible while editing.
+- **Hotspot marker shape is fixed** (a small circular badge with a link icon). Color is customizable per hotspot; rotation is fully supported (drag the Transformer's rotate handle, or use the rotation slider) and persists correctly, but the badge looks the same at any angle — a small yellow dot on the canvas (editor only) marks which way it "faces" so the rotation is visible while editing.
+- **A look's categories can only be set when it's first created** (in the "Upload a look" form) — there's no way to edit an existing look's categories from the editor yet.
+- **Arrow annotations don't support editing their style after creation** — you can change color, thickness, and drag either end to move/resize, but switching straight ↔ curved ↔ spiral means deleting and redrawing.
 
 ## Deploying
 

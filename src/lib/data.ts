@@ -1,6 +1,6 @@
 import { getDb } from "@/lib/mongodb";
 import { getMemoryStore } from "@/lib/memory-store";
-import type { Category, ClickEvent, Hotspot, ShoppableImage, ViewEvent } from "@/types";
+import type { Annotation, Category, ClickEvent, Hotspot, ShoppableImage, ViewEvent } from "@/types";
 import { randomUUID } from "crypto";
 
 /**
@@ -60,6 +60,36 @@ export async function deleteHotspot(id: string): Promise<void> {
     return;
   }
   await db.collection<Hotspot>("hotspots").deleteOne({ _id: id });
+}
+
+export async function listAnnotationsForImage(imageId: string): Promise<Annotation[]> {
+  const db = await getDb();
+  if (!db) return getMemoryStore().annotations.filter((a) => a.shoppableImageId === imageId);
+  return db.collection<Annotation>("annotations").find({ shoppableImageId: imageId }).toArray();
+}
+
+export async function upsertAnnotation(annotation: Annotation): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    const store = getMemoryStore();
+    const idx = store.annotations.findIndex((a) => a._id === annotation._id);
+    if (idx >= 0) store.annotations[idx] = annotation;
+    else store.annotations.push(annotation);
+    return;
+  }
+  await db
+    .collection<Annotation>("annotations")
+    .updateOne({ _id: annotation._id }, { $set: annotation }, { upsert: true });
+}
+
+export async function deleteAnnotation(id: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    const store = getMemoryStore();
+    store.annotations = store.annotations.filter((a) => a._id !== id);
+    return;
+  }
+  await db.collection<Annotation>("annotations").deleteOne({ _id: id });
 }
 
 export async function createShoppableImage(image: ShoppableImage): Promise<void> {

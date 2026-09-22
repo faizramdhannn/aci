@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import { listCategories } from "@/lib/data";
 import { CategoryManager } from "@/components/admin/category-manager";
 
+export const metadata: Metadata = { title: "Categories" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminCategoriesPage() {

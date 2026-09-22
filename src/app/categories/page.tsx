@@ -1,7 +1,10 @@
 import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
+import type { Metadata } from "next";
+import { CategoryIcon } from "@/components/admin/category-icons";
 import { listCategories } from "@/lib/data";
 
+export const metadata: Metadata = { title: "Categories" };
 export const dynamic = "force-dynamic";
 
 export default async function CategoriesPage() {
@@ -16,8 +19,9 @@ export default async function CategoriesPage() {
           {categories.map((category) => (
             <span
               key={category._id}
-              className="rounded-full border border-brown/15 bg-white/40 px-4 py-2 text-sm text-brown"
+              className="flex items-center gap-2 rounded-full border border-brown/15 bg-surface/70 px-4 py-2 text-sm text-brown"
             >
+              <CategoryIcon name={category.icon} className="h-4 w-4 text-orange" />
               {category.name}
             </span>
           ))}

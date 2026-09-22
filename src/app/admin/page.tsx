@@ -1,6 +1,8 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { listShoppableImages, getAnalyticsSummary } from "@/lib/data";
 
+export const metadata: Metadata = { title: "Overview" };
 export const dynamic = "force-dynamic";
 
 export default async function AdminOverviewPage() {
@@ -58,7 +60,7 @@ export default async function AdminOverviewPage() {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border border-brown/10 bg-white/40 p-4">
+    <div className="rounded-xl border border-brown/10 bg-surface/70 p-4">
       <p className="text-xs uppercase tracking-wide text-brown-soft">{label}</p>
       <p className="mt-1 text-2xl font-semibold text-brown">{value}</p>
     </div>
