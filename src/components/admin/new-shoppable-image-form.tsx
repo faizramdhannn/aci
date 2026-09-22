@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageUploadField, type UploadedImage } from "@/components/editor/image-upload-field";
-import { CategoryIcon } from "@/components/admin/category-icons";
+import { CategoryChipPicker } from "@/components/admin/category-chip-picker";
 import type { Category } from "@/types";
 
 export function NewShoppableImageForm({ categories }: { categories: Category[] }) {
@@ -120,24 +120,7 @@ export function NewShoppableImageForm({ categories }: { categories: Category[] }
         {categories.length > 0 && (
           <div className="text-sm">
             <span className="mb-2 block text-brown-soft">Categories (optional)</span>
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => {
-                const active = categoryIds.includes(category._id);
-                return (
-                  <button
-                    key={category._id}
-                    type="button"
-                    onClick={() => toggleCategory(category._id)}
-                    className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      active ? "border-orange bg-orange text-cream" : "border-brown/20 text-brown-soft hover:text-brown"
-                    }`}
-                  >
-                    <CategoryIcon name={category.icon} className="h-3.5 w-3.5" />
-                    {category.name}
-                  </button>
-                );
-              })}
-            </div>
+            <CategoryChipPicker categories={categories} selectedIds={categoryIds} onToggle={toggleCategory} />
           </div>
         )}
 

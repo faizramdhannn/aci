@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import type { Annotation, Hotspot, ShoppableImage as ShoppableImageType } from "@/types";
 import { LinkMarker } from "@/components/storefront/link-marker";
-import { ArrowOverlay } from "@/components/storefront/arrow-overlay";
+import { AnnotationOverlay } from "@/components/storefront/annotation-overlay";
 
 export function ShoppableImage({
   image,
@@ -42,7 +42,7 @@ export function ShoppableImage({
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={image.imageUrl} alt={image.title} className="h-full w-full object-cover" />
 
-      <ArrowOverlay annotations={annotations} />
+      <AnnotationOverlay annotations={annotations} imageWidth={image.imageWidth} imageHeight={image.imageHeight} />
 
       {hotspots
         .filter((h) => h.isActive)

@@ -28,6 +28,19 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${manrope.variable} ${caveat.variable} h-full antialiased`}
       suppressHydrationWarning
     >
+      <head>
+        {/*
+          Loaded under their real, global family names (not next/font's scoped
+          class names) so the same fonts can be referenced by plain string in
+          the editor's text-annotation tool — including inside a Konva
+          <canvas>, which needs an actual resolvable font-family name.
+        */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font -- this IS the root layout (App Router), the rule's pages-router premise doesn't apply */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&family=Caveat:wght@600;700&family=Playfair+Display:wght@700&family=Bebas+Neue&display=swap"
+        />
+      </head>
       <body className="min-h-full flex flex-col bg-cream text-brown" suppressHydrationWarning>
         {children}
       </body>

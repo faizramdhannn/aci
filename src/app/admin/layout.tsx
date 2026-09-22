@@ -29,21 +29,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </nav>
       </aside>
 
-      <div className="flex-1">
-        <header className="flex items-center justify-between border-b border-brown/10 px-5 py-4 md:hidden">
-          <span className="flex items-center gap-1.5 font-display text-xl text-orange">
-            <Logo size={22} />
+      <div className="min-w-0 flex-1">
+        <header className="border-b border-brown/10 px-4 py-3 md:hidden">
+          <Link href="/" className="mb-3 flex items-center gap-1.5 font-display text-lg text-orange">
+            <Logo size={20} />
             Aci Studio
-          </span>
-          <nav className="flex gap-3 text-xs text-brown-soft">
+          </Link>
+          <nav className="-mx-4 flex gap-1 overflow-x-auto px-4 text-xs text-brown-soft">
             {adminNavItems.map((item) => (
-              <Link key={item.href} href={item.href}>
+              <Link
+                key={item.href}
+                href={item.href}
+                className="shrink-0 whitespace-nowrap rounded-full border border-brown/15 px-3 py-1.5"
+              >
                 {item.label}
               </Link>
             ))}
           </nav>
         </header>
-        <main className="px-5 py-8 md:px-10">{children}</main>
+        <main className="min-w-0 px-4 py-6 md:px-10 md:py-8">{children}</main>
       </div>
     </div>
   );

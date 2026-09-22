@@ -15,6 +15,7 @@ const bodySchema = z.object({
   productPrice: z.number().nonnegative().optional(),
   marketplace: z.string().optional(),
   color: z.string().optional(),
+  categoryIds: z.array(z.string()).default([]),
   x: z.number().min(0).max(1),
   y: z.number().min(0).max(1),
   width: z.number().min(0.01).max(1),
