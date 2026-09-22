@@ -17,7 +17,7 @@ export function CategoryChipPicker({
   return (
     <div className="flex flex-wrap gap-1.5">
       {categories.map((category) => {
-        const active = selectedIds.includes(category._id);
+        const active = (selectedIds ?? []).includes(category._id);
         return (
           <button
             key={category._id}

@@ -499,9 +499,10 @@ export function HotspotEditor({
             onToggleCategory={(categoryId) => {
               const hotspot = hotspots.find((h) => h._id === selected.id);
               if (!hotspot) return;
-              const next = hotspot.categoryIds.includes(categoryId)
-                ? hotspot.categoryIds.filter((c) => c !== categoryId)
-                : [...hotspot.categoryIds, categoryId];
+              const current = hotspot.categoryIds ?? [];
+              const next = current.includes(categoryId)
+                ? current.filter((c) => c !== categoryId)
+                : [...current, categoryId];
               updateHotspot(selected.id, { categoryIds: next });
             }}
           />
