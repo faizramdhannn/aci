@@ -123,6 +123,7 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 - Click heatmap per look (`/admin/shoppable-images/[id]/heatmap`): overlays each product's click count as a heat blob at its hotspot position — an approximation, since clicks are tracked per-hotspot rather than by raw pointer coordinate (see Known limitations)
 - Category management (`/admin/categories`): create, rename, reorder (used as the public sort order), archive/restore, delete, and pick an icon from a curated lucide-react set (`src/components/admin/category-icons.tsx`) — also selectable when uploading a new look
 - Site search (`/search`): matches shoppable image titles/descriptions and product (hotspot) names, case-insensitive; linked from the desktop top bar and a compact mobile search button
+- Categories page (`/categories`): filter looks by category via clickable chips (`?category=<id>`), "All" resets the filter
 - Coordinate system: all hotspot and arrow positions are normalized (0–1) relative to the source image — see `src/lib/coordinates.ts` / `src/lib/arrow-shapes.ts` and their tests
 - Data layer that transparently uses MongoDB when `MONGODB_URI` is set and reachable, or an in-memory store seeded with demo data otherwise (`src/lib/data.ts`)
 
