@@ -3,7 +3,7 @@ import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
 import type { Metadata } from "next";
 import { CategoryIcon } from "@/components/admin/category-icons";
-import { listCategories, listShoppableImages } from "@/lib/data";
+import { listAllHotspots, listCategories, listShoppableImages } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Categories" };
 export const dynamic = "force-dynamic";
@@ -14,15 +14,26 @@ export default async function CategoriesPage({
   searchParams: Promise<{ category?: string }>;
 }) {
   const { category: activeCategoryId } = await searchParams;
-  const [categories, allImages] = await Promise.all([listCategories(), listShoppableImages()]);
+  const [categories, allImages, allHotspots] = await Promise.all([
+    listCategories(),
+    listShoppableImages(),
+    listAllHotspots(),
+  ]);
   const images = allImages.filter((i) => i.status === "published");
 
   const activeCategory = activeCategoryId
     ? categories.find((c) => c._id === activeCategoryId)
     : undefined;
 
+  // A look matches a category either directly (set on upload) or through any
+  // of its own products (hotspots) being tagged with that category.
   const visibleImages = activeCategory
-    ? images.filter((i) => i.categoryIds.includes(activeCategory._id))
+    ? images.filter((i) => {
+        if (i.categoryIds.includes(activeCategory._id)) return true;
+        return allHotspots.some(
+          (h) => h.shoppableImageId === i._id && (h.categoryIds ?? []).includes(activeCategory._id)
+        );
+      })
     : images;
 
   return (
