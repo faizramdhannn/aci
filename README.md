@@ -110,7 +110,10 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 - Per-page browser tab titles via Next's metadata title template (`%s — Aci`), including dynamic ones for shoppable image and search-query pages
 - Search popover: a search icon that expands an inline input beside it (desktop) or a compact button (mobile), submits to `/search`
 - Hotspots link straight to the affiliate URL on click (`/go/[hotspotId]`, opens in a new tab) — no intermediate popup; the marker itself is a small colored SVG "link" badge, color customizable per hotspot
-- Decorative arrow annotations (straight / curved / spiral), drawn like in Canva: pick a style, color, and size, then drag on the photo. Rendered with Konva in the editor and as a plain SVG overlay on the public page (`src/lib/arrow-shapes.ts`)
+- Decorative arrow annotations (straight / curved / spiral), drawn like in Canva: pick a style, color, and size, then drag on the photo; drag either end afterward to move/resize. Rendered with Konva in the editor and as a plain SVG overlay on the public page (`src/lib/arrow-shapes.ts`)
+- Text annotations: click "Add Text", click the photo, then edit the content, pick a font (Manrope, Caveat, Playfair Display, or Bebas Neue), color, and size from the side panel. Same Konva-in-editor / SVG-on-public-page rendering as arrows (`src/components/storefront/annotation-overlay.tsx`)
+- The hotspot editor's canvas is responsive (`ResizeObserver`-driven), so it fits phone-width screens instead of overflowing at a fixed 480px — same for the admin nav on mobile (horizontally scrollable pill row instead of clipping)
+- Existing hotspots are fully editable, not just repositionable: title, affiliate URL, price, color, categories, and rotation are all live fields in the side panel, autosaved
 - `/go/[hotspotId]` affiliate redirect: server-side URL validation (http/https only), records a click event, then redirects
 - View tracking on shoppable image pages (device/browser/OS parsed from the user agent, session cookie)
 - Admin: email/password login (single account, env-configured), protected `/admin/*` routes via `src/proxy.ts`
@@ -133,8 +136,9 @@ Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to s
 - **Analytics aggregation happens in Node**, not via MongoDB aggregation pipelines — fine at demo scale, would need revisiting for real traffic volume.
 - **Favorites page is a stub** — no persistence.
 - **Hotspot marker shape is fixed** (a small circular badge with a link icon). Color is customizable per hotspot; rotation is fully supported (drag the Transformer's rotate handle, or use the rotation slider) and persists correctly, but the badge looks the same at any angle — a small yellow dot on the canvas (editor only) marks which way it "faces" so the rotation is visible while editing.
-- **A look's categories can only be set when it's first created** (in the "Upload a look" form) — there's no way to edit an existing look's categories from the editor yet.
+- **A look's own categories can only be set when it's first created** (in the "Upload a look" form) — there's no way to edit an existing *look's* categories from the editor (individual *product* hotspots can be, though — that's a separate, per-product category picker in the side panel).
 - **Arrow annotations don't support editing their style after creation** — you can change color, thickness, and drag either end to move/resize, but switching straight ↔ curved ↔ spiral means deleting and redrawing.
+- **Text annotations don't support rotation** in the UI yet (the data model has a `rotation` field, unused by the text tool for now).
 
 ## Deploying
 

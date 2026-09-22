@@ -11,6 +11,7 @@ const patchSchema = z.object({
   productPrice: z.number().nonnegative().optional(),
   marketplace: z.string().optional(),
   color: z.string().optional(),
+  categoryIds: z.array(z.string()).optional(),
   x: z.number().min(0).max(1).optional(),
   y: z.number().min(0).max(1).optional(),
   width: z.number().min(0.01).max(1).optional(),

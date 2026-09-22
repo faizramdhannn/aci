@@ -13,6 +13,11 @@ const patchSchema = z.object({
   x2: z.number().min(0).max(1).optional(),
   y2: z.number().min(0).max(1).optional(),
   rotation: z.number().optional(),
+  text: z.string().min(1).max(200).optional(),
+  fontFamily: z.enum(["Manrope", "Caveat", "Playfair Display", "Bebas Neue"]).optional(),
+  fontSize: z.number().positive().optional(),
+  x: z.number().min(0).max(1).optional(),
+  y: z.number().min(0).max(1).optional(),
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {

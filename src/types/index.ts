@@ -33,6 +33,7 @@ export interface Hotspot {
   productImageUrl?: string;
   productPrice?: number;
   marketplace?: MarketplaceName;
+  categoryIds: string[];
   /** Hex color for the link marker icon, e.g. "#5A3D2B". */
   color: string;
   /** Normalized 0-1, relative to source image dimensions. */
@@ -48,23 +49,36 @@ export interface Hotspot {
 }
 
 export type ArrowStyle = "straight" | "curved" | "spiral";
+export type AnnotationKind = "arrow" | "text";
+export type FontChoice = "Manrope" | "Caveat" | "Playfair Display" | "Bebas Neue";
 
 export interface Annotation {
   _id: string;
   shoppableImageId: string;
   ownerId: string;
-  kind: "arrow";
-  style: ArrowStyle;
+  kind: AnnotationKind;
   color: string;
-  strokeWidth: number;
-  /** Normalized 0-1 start/end points, relative to source image dimensions. */
-  x1: number;
-  y1: number;
-  x2: number;
-  y2: number;
   rotation: number;
   createdAt: string;
   updatedAt: string;
+
+  // Arrow fields (kind === "arrow")
+  style?: ArrowStyle;
+  strokeWidth?: number;
+  /** Normalized 0-1 start/end points, relative to source image dimensions. */
+  x1?: number;
+  y1?: number;
+  x2?: number;
+  y2?: number;
+
+  // Text fields (kind === "text")
+  text?: string;
+  fontFamily?: FontChoice;
+  /** Normalized 0-1, relative to source image width. */
+  fontSize?: number;
+  /** Normalized 0-1 position, relative to source image dimensions. */
+  x?: number;
+  y?: number;
 }
 
 export interface Category {

@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import type { Hotspot } from "@/types";
+import type { Category, Hotspot } from "@/types";
+import { CategoryChipPicker } from "@/components/admin/category-chip-picker";
 
 const MARKER_COLORS = ["#5A3D2B", "#E5781E", "#FBBA00", "#2B1E17"];
 
 export function AddProductModal({
   shoppableImageId,
+  categories,
   onCreated,
   onClose,
 }: {
   shoppableImageId: string;
+  categories: Category[];
   onCreated: (hotspot: Hotspot) => void;
   onClose: () => void;
 }) {
@@ -18,8 +21,13 @@ export function AddProductModal({
   const [affiliateUrl, setAffiliateUrl] = useState("");
   const [price, setPrice] = useState("");
   const [color, setColor] = useState(MARKER_COLORS[0]);
+  const [categoryIds, setCategoryIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  function toggleCategory(id: string) {
+    setCategoryIds((prev) => (prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]));
+  }
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,6 +43,7 @@ export function AddProductModal({
         affiliateUrl,
         productPrice: price ? Number(price) : undefined,
         color,
+        categoryIds,
         x: 0.5,
         y: 0.5,
         width: 0.08,
@@ -120,6 +129,13 @@ export function AddProductModal({
             />
           </div>
         </div>
+
+        {categories.length > 0 && (
+          <div>
+            <span className="mb-1 block text-xs text-brown-soft">Categories (optional)</span>
+            <CategoryChipPicker categories={categories} selectedIds={categoryIds} onToggle={toggleCategory} />
+          </div>
+        )}
 
         {error && <p className="text-xs text-orange">{error}</p>}
 
