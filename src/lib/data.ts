@@ -34,6 +34,12 @@ export async function listHotspotsForImage(imageId: string): Promise<Hotspot[]> 
   return db.collection<Hotspot>("hotspots").find({ shoppableImageId: imageId }).toArray();
 }
 
+export async function listAllHotspots(): Promise<Hotspot[]> {
+  const db = await getDb();
+  if (!db) return getMemoryStore().hotspots;
+  return db.collection<Hotspot>("hotspots").find().toArray();
+}
+
 export async function getHotspotById(id: string): Promise<Hotspot | null> {
   const db = await getDb();
   if (!db) return getMemoryStore().hotspots.find((h) => h._id === id) ?? null;
