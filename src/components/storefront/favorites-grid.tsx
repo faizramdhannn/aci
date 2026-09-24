@@ -6,8 +6,10 @@ import Image from "next/image";
 import type { ShoppableImage } from "@/types";
 import { FavoriteButton } from "@/components/storefront/favorite-button";
 import { getFavoriteIds } from "@/lib/favorites";
+import { useDictionary } from "@/components/i18n/locale-provider";
 
 export function FavoritesGrid() {
+  const t = useDictionary();
   const [images, setImages] = useState<ShoppableImage[] | null>(null);
 
   useEffect(() => {
@@ -23,10 +25,10 @@ export function FavoritesGrid() {
       .catch(() => setImages([]));
   }, []);
 
-  if (images === null) return <p className="text-brown-soft">Loading…</p>;
+  if (images === null) return <p className="text-brown-soft">{t.favorites.loading}</p>;
 
   if (images.length === 0) {
-    return <p className="text-brown-soft">Nothing saved yet. Tap the heart on a look to save it here.</p>;
+    return <p className="text-brown-soft">{t.favorites.empty}</p>;
   }
 
   return (

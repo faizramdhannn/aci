@@ -1,5 +1,6 @@
 import type { Annotation } from "@/types";
 import { buildArrowPoints } from "@/lib/arrow-shapes";
+import { fontFamilyFor } from "@/lib/fonts";
 
 /**
  * Renders arrow and text annotations over a shoppable image. Uses a viewBox
@@ -69,7 +70,7 @@ export function AnnotationOverlay({
           x={a.x! * imageWidth}
           y={a.y! * imageHeight}
           fill={a.color}
-          fontFamily={a.fontFamily}
+          fontFamily={fontFamilyFor(a.fontFamily)}
           fontSize={a.fontSize! * imageWidth}
           fontWeight={a.fontFamily === "Manrope" ? 700 : undefined}
           dominantBaseline="hanging"

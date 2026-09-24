@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { createShoppableImage, listShoppableImages } from "@/lib/data";
+import { createShoppableImage, generateUniqueSlug, listPublishedImages, listShoppableImages } from "@/lib/data";
 import type { ShoppableImage } from "@/types";
 
 const bodySchema = z.object({
@@ -14,18 +14,10 @@ const bodySchema = z.object({
   categoryIds: z.array(z.string()).default([]),
 });
 
-function slugify(title: string) {
-  return (
-    title
-      .toLowerCase()
-      .trim()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/(^-|-$)/g, "") || randomUUID().slice(0, 8)
-  );
-}
-
 export async function GET() {
-  const images = await listShoppableImages();
+  // Drafts (and their image URLs) are admin-only.
+  const session = await auth();
+  const images = session ? await listShoppableImages() : await listPublishedImages();
   return NextResponse.json(images);
 }
 
@@ -42,7 +34,7 @@ export async function POST(request: Request) {
     _id: randomUUID(),
     ownerId: "seed-owner",
     title: parsed.data.title,
-    slug: slugify(parsed.data.title),
+    slug: await generateUniqueSlug(parsed.data.title),
     description: parsed.data.description,
     imageUrl: parsed.data.imageUrl,
     imageWidth: parsed.data.imageWidth,

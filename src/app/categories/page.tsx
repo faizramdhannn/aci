@@ -1,18 +1,25 @@
 import Link from "next/link";
 import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
+import { SiteFooter } from "@/components/navigation/site-footer";
 import type { Metadata } from "next";
 import { CategoryIcon } from "@/components/admin/category-icons";
-import { LookPreview } from "@/components/storefront/look-preview";
-import { FavoriteButton } from "@/components/storefront/favorite-button";
+import { LookCard } from "@/components/storefront/look-card";
 import { Pagination } from "@/components/ui/pagination";
-import { listAllHotspots, listAnnotationsForImage, listCategories, listShoppableImages } from "@/lib/data";
-import { paginate } from "@/lib/pagination";
+import { listAnnotationsForImages, listCategories, listHotspotsForImages, listPublishedImagesPage } from "@/lib/data";
+import { getDictionary } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Categories" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getDictionary()).categories.title };
+}
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 12;
+
+const chipClass = (active: boolean) =>
+  `flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors ${
+    active ? "border-orange bg-orange text-cream" : "border-brown/15 bg-surface/70 text-brown hover:border-orange/50"
+  }`;
 
 export default async function CategoriesPage({
   searchParams,
@@ -22,90 +29,53 @@ export default async function CategoriesPage({
   const { category: activeCategoryId, page: pageParam } = await searchParams;
   const requestedPage = Math.max(1, Number(pageParam) || 1);
 
-  const [categories, allImages, allHotspots] = await Promise.all([
-    listCategories(),
-    listShoppableImages(),
-    listAllHotspots(),
-  ]);
-  const publishedImages = allImages.filter((i) => i.status === "published");
+  const [t, allCategories] = await Promise.all([getDictionary(), listCategories()]);
+  const categories = allCategories.filter((c) => c.isActive);
+  const activeCategory = activeCategoryId ? categories.find((c) => c._id === activeCategoryId) : undefined;
 
-  const activeCategory = activeCategoryId
-    ? categories.find((c) => c._id === activeCategoryId)
-    : undefined;
-
-  // A look matches a category either directly (set on upload) or through any
-  // of its own products (hotspots) being tagged with that category.
-  const matchingImages = activeCategory
-    ? publishedImages.filter((i) => {
-        if (i.categoryIds.includes(activeCategory._id)) return true;
-        return allHotspots.some(
-          (h) => h.shoppableImageId === i._id && (h.categoryIds ?? []).includes(activeCategory._id)
-        );
-      })
-    : publishedImages;
-
-  const { items: visibleImages, page, totalPages } = paginate(matchingImages, requestedPage, PAGE_SIZE);
-
-  // Only fetch annotations for the images actually shown on this page.
-  const annotationsByImage = Object.fromEntries(
-    await Promise.all(
-      visibleImages.map(async (image) => [image._id, await listAnnotationsForImage(image._id)] as const)
-    )
-  );
+  const { items: images, page, totalPages } = await listPublishedImagesPage({
+    page: requestedPage,
+    pageSize: PAGE_SIZE,
+    categoryId: activeCategory?._id,
+  });
+  const ids = images.map((i) => i._id);
+  const [hotspots, annotations] = await Promise.all([listHotspotsForImages(ids), listAnnotationsForImages(ids)]);
 
   return (
     <>
       <TopBar />
-      <main className="mx-auto w-full max-w-6xl flex-1 px-6 pb-28 pt-8 md:pb-16">
-        <h1 className="mb-6 text-2xl font-semibold text-brown">Categories</h1>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-6 pt-8">
+        <h1 className="mb-6 text-2xl font-semibold text-brown">{t.categories.title}</h1>
         <div className="flex flex-wrap gap-2">
-          <Link
-            href="/categories"
-            className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors ${
-              !activeCategory
-                ? "border-orange bg-orange text-cream"
-                : "border-brown/15 bg-surface/70 text-brown hover:border-orange/50"
-            }`}
-          >
-            All
+          <Link href="/categories" className={chipClass(!activeCategory)}>
+            {t.categories.all}
           </Link>
-          {categories.map((category) => (
-            <Link
-              key={category._id}
-              href={`/categories?category=${category._id}`}
-              className={`flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors ${
-                activeCategory?._id === category._id
-                  ? "border-orange bg-orange text-cream"
-                  : "border-brown/15 bg-surface/70 text-brown hover:border-orange/50"
-              }`}
-            >
-              <CategoryIcon
-                name={category.icon}
-                className={`h-4 w-4 ${activeCategory?._id === category._id ? "text-cream" : "text-orange"}`}
-              />
-              {category.name}
-            </Link>
-          ))}
+          {categories.map((category) => {
+            const active = activeCategory?._id === category._id;
+            return (
+              <Link key={category._id} href={`/categories?category=${category._id}`} className={chipClass(active)}>
+                <CategoryIcon name={category.icon} className={`h-4 w-4 ${active ? "text-cream" : "text-orange"}`} />
+                {category.name}
+              </Link>
+            );
+          })}
         </div>
 
         <div className="mt-8">
-          {visibleImages.length === 0 ? (
-            <p className="text-brown-soft">Nothing here yet.</p>
+          {images.length === 0 ? (
+            <p className="text-brown-soft">{t.categories.empty}</p>
           ) : (
             <>
               <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-                {visibleImages.map((image) => (
-                  <div key={image._id} className="group relative">
-                    <Link href={`/p/${image.slug}`} className="block">
-                      <LookPreview
-                        image={image}
-                        hotspots={allHotspots.filter((h) => h.shoppableImageId === image._id)}
-                        annotations={annotationsByImage[image._id]}
-                      />
-                      <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>
-                    </Link>
-                    <FavoriteButton imageId={image._id} className="absolute right-2 top-2" />
-                  </div>
+                {images.map((image) => (
+                  <LookCard
+                    key={image._id}
+                    image={image}
+                    hotspots={hotspots}
+                    annotations={annotations}
+                    categories={allCategories}
+                    t={t}
+                  />
                 ))}
               </div>
               <Pagination
@@ -113,11 +83,13 @@ export default async function CategoriesPage({
                 totalPages={totalPages}
                 basePath="/categories"
                 searchParams={{ category: activeCategoryId }}
+                t={t}
               />
             </>
           )}
         </div>
       </main>
+      <SiteFooter />
       <BottomBar />
     </>
   );

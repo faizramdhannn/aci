@@ -1,14 +1,15 @@
 /**
- * Seeds MongoDB (MONGODB_URI) with the same demo data the app falls back to
- * in-memory. Run after pointing the app at a real MongoDB instance, so the
- * data actually persists across restarts.
+ * WIPES and re-seeds MongoDB (MONGODB_URI) with the demo data the app falls
+ * back to in-memory. Destructive: never run this against a database that
+ * holds real looks. To only (re)create indexes, use `npm run db:indexes`.
  *
- * Usage: npm run seed
+ * Usage: npm run seed -- --yes-wipe-everything
  */
 import { config } from "dotenv";
 import { MongoClient, type Document } from "mongodb";
 
 config({ path: ".env.local" });
+import { ensureIndexes } from "./ensure-indexes";
 import {
   seedCategories,
   seedClickEvents,
@@ -24,6 +25,14 @@ async function main() {
     process.exit(1);
   }
 
+  if (!process.argv.includes("--yes-wipe-everything")) {
+    console.error(
+      "This deletes ALL looks, hotspots, categories, and analytics in the target database before seeding demo data.\n" +
+        "Re-run with: npm run seed -- --yes-wipe-everything"
+    );
+    process.exit(1);
+  }
+
   const client = new MongoClient(uri);
   await client.connect();
   const db = client.db(process.env.MONGODB_DB_NAME || "aci");
@@ -34,6 +43,7 @@ async function main() {
     db.collection("hotspots").deleteMany({}),
     db.collection("viewEvents").deleteMany({}),
     db.collection("clickEvents").deleteMany({}),
+    db.collection("annotations").deleteMany({}),
   ]);
 
   await db.collection("categories").insertMany(seedCategories as unknown as Document[]);
@@ -42,11 +52,7 @@ async function main() {
   if (seedViewEvents.length) await db.collection("viewEvents").insertMany(seedViewEvents as unknown as Document[]);
   if (seedClickEvents.length) await db.collection("clickEvents").insertMany(seedClickEvents as unknown as Document[]);
 
-  await db.collection("hotspots").createIndex({ shoppableImageId: 1 });
-  await db.collection("clickEvents").createIndex({ hotspotId: 1 });
-  await db.collection("clickEvents").createIndex({ createdAt: 1 });
-  await db.collection("viewEvents").createIndex({ shoppableImageId: 1 });
-  await db.collection("viewEvents").createIndex({ createdAt: 1 });
+  await ensureIndexes(db);
 
   console.log(
     `Seeded ${seedCategories.length} categories, ${seedShoppableImages.length} shoppable images, ${seedHotspots.length} hotspots.`

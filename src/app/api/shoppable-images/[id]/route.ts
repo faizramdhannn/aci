@@ -11,6 +11,7 @@ const patchSchema = z.object({
   imageWidth: z.number().int().positive().optional(),
   imageHeight: z.number().int().positive().optional(),
   categoryIds: z.array(z.string()).optional(),
+  featured: z.boolean().optional(),
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {

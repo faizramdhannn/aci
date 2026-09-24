@@ -59,9 +59,10 @@ export function ImageUploadField({
     }
   }
 
-  async function handleImportUrl(e: React.FormEvent) {
-    e.preventDefault();
-    if (!importUrl.trim()) return;
+  // Not a <form>: this field is rendered inside other forms (e.g. "Upload a
+  // look", Settings), and nested forms are invalid HTML.
+  async function handleImportUrl() {
+    if (!importUrl.trim() || importing) return;
     setError(null);
     setImporting(true);
     try {
@@ -133,22 +134,29 @@ export function ImageUploadField({
       )}
       {error && <p className="mt-2 text-xs text-orange">{error}</p>}
 
-      <form onSubmit={handleImportUrl} className="mt-3 flex gap-2">
+      <div className="mt-3 flex gap-2">
         <input
           type="url"
           value={importUrl}
           onChange={(e) => setImportUrl(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              handleImportUrl();
+            }
+          }}
           placeholder="Or paste an Instagram/TikTok post link…"
           className="w-full min-w-0 flex-1 rounded-lg border border-brown/20 bg-cream px-3 py-2 text-xs outline-none focus:border-orange"
         />
         <button
-          type="submit"
+          type="button"
+          onClick={handleImportUrl}
           disabled={importing || !importUrl.trim()}
           className="shrink-0 rounded-lg border border-brown/20 px-3 py-2 text-xs font-medium text-brown-soft transition-colors hover:text-brown disabled:opacity-50"
         >
           {importing ? "Importing…" : "Import"}
         </button>
-      </form>
+      </div>
     </div>
   );
 }

@@ -9,6 +9,7 @@ import { clamp01, pixelsToNormalized } from "@/lib/coordinates";
 import { buildArrowPoints, toFlatPoints } from "@/lib/arrow-shapes";
 import { AddProductModal } from "@/components/editor/add-product-modal";
 import { CategoryChipPicker } from "@/components/admin/category-chip-picker";
+import { fontFamilyFor } from "@/lib/fonts";
 
 const MAX_CANVAS_WIDTH = 480;
 const MIN_CANVAS_WIDTH = 220;
@@ -394,7 +395,7 @@ export function HotspotEditor({
                   x={t.x! * canvasWidth}
                   y={t.y! * canvasHeight}
                   text={t.text}
-                  fontFamily={t.fontFamily}
+                  fontFamily={fontFamilyFor(t.fontFamily)}
                   fontSize={t.fontSize! * canvasWidth}
                   fontStyle={t.fontFamily === "Manrope" ? "700" : "normal"}
                   fill={t.color}
@@ -649,10 +650,10 @@ function FontSelect({ value, onChange }: { value: FontChoice; onChange: (f: Font
       value={value}
       onChange={(e) => onChange(e.target.value as FontChoice)}
       className="rounded-full border border-brown/20 bg-cream px-3 py-1.5 text-xs text-brown outline-none focus:border-orange"
-      style={{ fontFamily: value }}
+      style={{ fontFamily: fontFamilyFor(value) }}
     >
       {FONT_CHOICES.map((f) => (
-        <option key={f} value={f} style={{ fontFamily: f }}>
+        <option key={f} value={f} style={{ fontFamily: fontFamilyFor(f) }}>
           {f}
         </option>
       ))}
@@ -815,7 +816,7 @@ function SelectedTextDetails({
           value={annotation.text}
           onChange={(e) => onText(e.target.value)}
           className="w-full rounded-lg border border-brown/20 bg-cream px-2.5 py-1.5 text-sm outline-none focus:border-orange"
-          style={{ fontFamily: annotation.fontFamily }}
+          style={{ fontFamily: fontFamilyFor(annotation.fontFamily) }}
         />
       </label>
 

@@ -4,9 +4,11 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { mobileNavItems } from "@/config/site";
 import { NavIcon } from "@/components/navigation/nav-icon";
+import { useDictionary } from "@/components/i18n/locale-provider";
 
 export function BottomBar() {
   const pathname = usePathname();
+  const t = useDictionary();
 
   return (
     <nav
@@ -24,7 +26,7 @@ export function BottomBar() {
             }`}
           >
             <NavIcon name={item.icon} active={active} />
-            {item.label}
+            {t.nav[item.key]}
           </Link>
         );
       })}

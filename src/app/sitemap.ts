@@ -1,11 +1,14 @@
 import type { MetadataRoute } from "next";
-import { listShoppableImages } from "@/lib/data";
+import { listPublishedImages } from "@/lib/data";
 import { siteUrl } from "@/lib/site-url";
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const images = (await listShoppableImages()).filter((i) => i.status === "published");
+// Built on request, not at build time — the build shouldn't need a live database.
+export const dynamic = "force-dynamic";
 
-  const staticRoutes: MetadataRoute.Sitemap = ["", "/shop", "/categories", "/favorites"].map((path) => ({
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const images = await listPublishedImages();
+
+  const staticRoutes: MetadataRoute.Sitemap = ["", "/shop", "/categories", "/privacy", "/disclosure"].map((path) => ({
     url: `${siteUrl}${path}`,
     changeFrequency: "daily",
     priority: path === "" ? 1 : 0.6,

@@ -5,7 +5,7 @@ import {
   seedShoppableImages,
   seedViewEvents,
 } from "@/lib/seed-data";
-import type { Annotation, Category, ClickEvent, Hotspot, ShoppableImage, ViewEvent } from "@/types";
+import type { Annotation, Category, ClickEvent, Hotspot, ShoppableImage, SiteSettings, ViewEvent } from "@/types";
 
 /**
  * Mutable in-process store used only when MONGODB_URI is not configured.
@@ -22,6 +22,7 @@ declare global {
         views: ViewEvent[];
         clicks: ClickEvent[];
         annotations: Annotation[];
+        settings: SiteSettings | null;
       }
     | undefined;
 }
@@ -34,6 +35,7 @@ function initStore() {
     views: [...seedViewEvents],
     clicks: [...seedClickEvents],
     annotations: [] as Annotation[],
+    settings: null as SiteSettings | null,
   };
 }
 

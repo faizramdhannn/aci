@@ -17,6 +17,8 @@ export interface ShoppableImage {
   imageHeight: number;
   categoryIds: string[];
   status: "draft" | "published";
+  /** Shown in the homepage hero carousel (instead of the regular grid). */
+  featured?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -124,4 +126,16 @@ export interface ClickEvent {
   /** Normalized 0-1 click position on the source image. */
   clickX?: number;
   clickY?: number;
+}
+
+/** Creator/site identity shown in the hero and footer, editable from /admin/settings. */
+export interface SiteSettings {
+  siteName: string;
+  creatorName: string;
+  tagline: string;
+  about: string;
+  avatarUrl?: string;
+  instagramUrl?: string;
+  tiktokUrl?: string;
+  email?: string;
 }

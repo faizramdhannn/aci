@@ -4,7 +4,8 @@
   --color-cream: #fdf9e3;
   --color-cream-soft: #f6efd2;
   --color-yellow: #fbba00;
-  --color-orange: #e5781e;
+  /* Darker than the brand #e5781e so orange text/buttons pass WCAG AA (4.97:1) on cream. */
+  --color-orange: #ad520d;
   --color-brown: #5a3d2b;
   --color-brown-soft: #8a6a54;
   --color-surface: #ffffff;
@@ -20,6 +21,7 @@
   :root:not(.light) {
     --color-cream: #211712;
     --color-cream-soft: #2b1e17;
+    --color-orange: #e5781e;
     --color-brown: #f3e6d8;
     --color-brown-soft: #c9ab93;
     --color-surface: #2b1e17;
@@ -32,6 +34,7 @@
 :root.dark {
   --color-cream: #211712;
   --color-cream-soft: #2b1e17;
+  --color-orange: #e5781e;
   --color-brown: #f3e6d8;
   --color-brown-soft: #c9ab93;
   --color-surface: #2b1e17;
@@ -84,4 +87,29 @@ body {
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
   border: 1px solid color-mix(in srgb, var(--color-cream) 18%, transparent);
+}
+
+/* Soft pulse ring behind storefront hotspot markers so they read as tappable
+   against busy photos. Disabled for people who prefer reduced motion. */
+@keyframes hotspot-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(2.1);
+    opacity: 0;
+  }
+}
+
+.hotspot-pulse {
+  animation: hotspot-pulse 2.2s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hotspot-pulse {
+    animation: none;
+    opacity: 0;
+  }
 }

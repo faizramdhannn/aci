@@ -1,58 +1,41 @@
 import type { Metadata } from "next";
-import { Manrope, Caveat } from "next/font/google";
 import { ToastProvider } from "@/components/ui/toast-provider";
+import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { siteUrl } from "@/lib/site-url";
+import { fontVariables } from "@/lib/fonts";
+import { getLocale } from "@/lib/i18n/server";
+import { getSiteSettings } from "@/lib/data";
 import "./globals.css";
 
-const manrope = Manrope({
-  variable: "--font-manrope",
-  subsets: ["latin"],
-});
+export async function generateMetadata(): Promise<Metadata> {
+  const [locale, settings] = await Promise.all([getLocale(), getSiteSettings()]);
+  const description = settings.tagline || "Tap an item in the photo to see where it's from.";
+  return {
+    metadataBase: new URL(siteUrl),
+    title: {
+      default: `${settings.siteName} — shop the look`,
+      template: `%s — ${settings.siteName}`,
+    },
+    description,
+    openGraph: {
+      siteName: settings.siteName,
+      type: "website",
+      locale: locale === "id" ? "id_ID" : "en_US",
+      alternateLocale: locale === "id" ? "en_US" : "id_ID",
+    },
+    twitter: { card: "summary_large_image" },
+  };
+}
 
-const caveat = Caveat({
-  variable: "--font-caveat",
-  subsets: ["latin"],
-  weight: ["600", "700"],
-});
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  const locale = await getLocale();
 
-export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
-  title: {
-    default: "Aci — shop the look",
-    template: "%s — Aci",
-  },
-  description: "Tap an item in the photo to see where it's from.",
-  openGraph: {
-    siteName: "Aci",
-    type: "website",
-  },
-  twitter: {
-    card: "summary_large_image",
-  },
-};
-
-export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${manrope.variable} ${caveat.variable} h-full antialiased`}
-      suppressHydrationWarning
-    >
-      <head>
-        {/*
-          Loaded under their real, global family names (not next/font's scoped
-          class names) so the same fonts can be referenced by plain string in
-          the editor's text-annotation tool — including inside a Konva
-          <canvas>, which needs an actual resolvable font-family name.
-        */}
-        {/* eslint-disable-next-line @next/next/no-page-custom-font -- this IS the root layout (App Router), the rule's pages-router premise doesn't apply */}
-        <link
-          rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&family=Caveat:wght@600;700&family=Playfair+Display:wght@700&family=Bebas+Neue&display=swap"
-        />
-      </head>
+    <html lang={locale} className={`${fontVariables} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-cream text-brown" suppressHydrationWarning>
-        <ToastProvider>{children}</ToastProvider>
+        <LocaleProvider locale={locale}>
+          <ToastProvider>{children}</ToastProvider>
+        </LocaleProvider>
       </body>
     </html>
   );

@@ -1,7 +1,9 @@
 import { getDb } from "@/lib/mongodb";
 import { getMemoryStore } from "@/lib/memory-store";
-import type { Annotation, Category, ClickEvent, Hotspot, ShoppableImage, ViewEvent } from "@/types";
+import type { Annotation, Category, ClickEvent, Hotspot, ShoppableImage, SiteSettings, ViewEvent } from "@/types";
 import { randomUUID } from "crypto";
+import type { Filter } from "mongodb";
+import { paginate, type Paginated } from "@/lib/pagination";
 
 /**
  * Thin data-access layer: reads/writes Mongo when MONGODB_URI is configured
@@ -38,6 +40,139 @@ export async function listAllHotspots(): Promise<Hotspot[]> {
   const db = await getDb();
   if (!db) return getMemoryStore().hotspots;
   return db.collection<Hotspot>("hotspots").find().toArray();
+}
+
+export async function listHotspotsForImages(imageIds: string[]): Promise<Hotspot[]> {
+  if (imageIds.length === 0) return [];
+  const db = await getDb();
+  if (!db) return getMemoryStore().hotspots.filter((h) => imageIds.includes(h.shoppableImageId));
+  return db.collection<Hotspot>("hotspots").find({ shoppableImageId: { $in: imageIds } }).toArray();
+}
+
+export async function listAnnotationsForImages(imageIds: string[]): Promise<Annotation[]> {
+  if (imageIds.length === 0) return [];
+  const db = await getDb();
+  if (!db) return getMemoryStore().annotations.filter((a) => imageIds.includes(a.shoppableImageId));
+  return db.collection<Annotation>("annotations").find({ shoppableImageId: { $in: imageIds } }).toArray();
+}
+
+/**
+ * One page of published looks, newest first, paginated in the database
+ * (skip/limit) rather than by loading the whole catalog into Node. With a
+ * categoryId, a look matches if it carries the category itself or any of its
+ * products (hotspots) do.
+ */
+export async function listPublishedImagesPage({
+  page,
+  pageSize,
+  categoryId,
+}: {
+  page: number;
+  pageSize: number;
+  categoryId?: string;
+}): Promise<Paginated<ShoppableImage>> {
+  const db = await getDb();
+
+  if (!db) {
+    const store = getMemoryStore();
+    const matching = store.images
+      .filter((i) => i.status === "published")
+      .filter((i) => {
+        if (!categoryId) return true;
+        if (i.categoryIds.includes(categoryId)) return true;
+        return store.hotspots.some(
+          (h) => h.shoppableImageId === i._id && (h.categoryIds ?? []).includes(categoryId)
+        );
+      })
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    return paginate(matching, page, pageSize);
+  }
+
+  const filter: Filter<ShoppableImage> = { status: "published" };
+  if (categoryId) {
+    const viaProducts = await db
+      .collection<Hotspot>("hotspots")
+      .distinct("shoppableImageId", { categoryIds: categoryId });
+    filter.$or = [{ categoryIds: categoryId }, { _id: { $in: viaProducts } }];
+  }
+
+  const images = db.collection<ShoppableImage>("shoppableImages");
+  const total = await images.countDocuments(filter);
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const items = await images
+    .find(filter)
+    .sort({ createdAt: -1 })
+    .skip((safePage - 1) * pageSize)
+    .limit(pageSize)
+    .toArray();
+
+  return { items, page: safePage, totalPages, total };
+}
+
+/**
+ * Looks for the homepage hero carousel: ones explicitly marked featured, or —
+ * until any are — just the newest one, so the hero is never empty and the
+ * grid below still has something to show on a small catalog.
+ */
+export async function listFeaturedImages(limit = 5): Promise<ShoppableImage[]> {
+  const db = await getDb();
+  if (!db) {
+    const published = getMemoryStore()
+      .images.filter((i) => i.status === "published")
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const featured = published.filter((i) => i.featured);
+    return featured.length > 0 ? featured.slice(0, limit) : published.slice(0, 1);
+  }
+  const images = db.collection<ShoppableImage>("shoppableImages");
+  const featured = await images.find({ status: "published", featured: true }).sort({ createdAt: -1 }).limit(limit).toArray();
+  if (featured.length > 0) return featured;
+  return images.find({ status: "published" }).sort({ createdAt: -1 }).limit(1).toArray();
+}
+
+export async function listPublishedImagesExcluding(excludeIds: string[], limit: number): Promise<ShoppableImage[]> {
+  const db = await getDb();
+  if (!db) {
+    return getMemoryStore()
+      .images.filter((i) => i.status === "published" && !excludeIds.includes(i._id))
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+      .slice(0, limit);
+  }
+  return db
+    .collection<ShoppableImage>("shoppableImages")
+    .find({ status: "published", _id: { $nin: excludeIds } })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
+}
+
+export async function listPublishedImages(): Promise<ShoppableImage[]> {
+  const db = await getDb();
+  if (!db) return getMemoryStore().images.filter((i) => i.status === "published");
+  return db
+    .collection<ShoppableImage>("shoppableImages")
+    .find({ status: "published" })
+    .sort({ createdAt: -1 })
+    .toArray();
+}
+
+function slugify(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+}
+
+/** A slug for `title` not already used by another look: "golden-hour", then "golden-hour-2", "-3", … */
+export async function generateUniqueSlug(title: string, excludeId?: string): Promise<string> {
+  const base = slugify(title) || randomUUID().slice(0, 8);
+  for (let n = 1; n < 1000; n++) {
+    const candidate = n === 1 ? base : `${base}-${n}`;
+    const existing = await getShoppableImageBySlug(candidate);
+    if (!existing || existing._id === excludeId) return candidate;
+  }
+  return `${base}-${randomUUID().slice(0, 8)}`;
 }
 
 export async function getHotspotById(id: string): Promise<Hotspot | null> {
@@ -156,8 +291,9 @@ export async function duplicateShoppableImage(id: string): Promise<ShoppableImag
     ...original,
     _id: newImageId,
     title: `${original.title} (copy)`,
-    slug: `${original.slug}-copy-${newImageId.slice(0, 8)}`,
+    slug: await generateUniqueSlug(`${original.title} copy`),
     status: "draft",
+    featured: false,
     createdAt: now,
     updatedAt: now,
   };
@@ -325,8 +461,8 @@ export async function searchContent(query: string): Promise<SearchResults> {
   const q = query.trim().toLowerCase();
   if (!q) return { images: [] };
 
-  const [allImages, allHotspots] = await Promise.all([listShoppableImages(), listAllHotspots()]);
-  const published = allImages.filter((i) => i.status === "published");
+  const published = await listPublishedImages();
+  const allHotspots = await listHotspotsForImages(published.map((i) => i._id));
 
   const scoreByImageId = new Map<string, number>();
   for (const image of published) {
@@ -359,80 +495,126 @@ export interface AnalyticsSummary {
   topCategories: { categoryId: string; name: string; clicks: number }[];
 }
 
-export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+interface EventCounts {
+  totalViews: number;
+  totalClicks: number;
+  uniqueSessions: number;
+  viewsByDate: Map<string, number>;
+  clicksByDate: Map<string, number>;
+  clicksByDevice: Map<string, number>;
+  clicksByHotspot: Map<string, number>;
+}
+
+/**
+ * Raw event tallies. With Mongo this runs as aggregation pipelines ($group on
+ * the server) so the page never loads every view/click event into Node — the
+ * memory-store fallback is dev-only and small, so it just loops.
+ */
+async function countEvents(): Promise<EventCounts> {
   const db = await getDb();
 
-  const views: ViewEvent[] = db
-    ? await db.collection<ViewEvent>("viewEvents").find().toArray()
-    : getMemoryStore().views;
-  const clicks: ClickEvent[] = db
-    ? await db.collection<ClickEvent>("clickEvents").find().toArray()
-    : getMemoryStore().clicks;
-  const hotspots: Hotspot[] = db
-    ? await db.collection<Hotspot>("hotspots").find().toArray()
-    : getMemoryStore().hotspots;
-
-  const totalViews = views.length;
-  const totalClicks = clicks.length;
-  const ctr = totalViews > 0 ? totalClicks / totalViews : 0;
-  const uniqueSessions = new Set([...views.map((v) => v.sessionId), ...clicks.map((c) => c.sessionId)]).size;
-
-  const deviceCounts = new Map<string, number>();
-  for (const click of clicks) {
-    deviceCounts.set(click.deviceType, (deviceCounts.get(click.deviceType) ?? 0) + 1);
+  if (!db) {
+    const { views, clicks } = getMemoryStore();
+    const tally = <T,>(items: T[], key: (item: T) => string) => {
+      const map = new Map<string, number>();
+      for (const item of items) map.set(key(item), (map.get(key(item)) ?? 0) + 1);
+      return map;
+    };
+    return {
+      totalViews: views.length,
+      totalClicks: clicks.length,
+      uniqueSessions: new Set([...views.map((v) => v.sessionId), ...clicks.map((c) => c.sessionId)]).size,
+      viewsByDate: tally(views, (v) => v.createdAt.slice(0, 10)),
+      clicksByDate: tally(clicks, (c) => c.createdAt.slice(0, 10)),
+      clicksByDevice: tally(clicks, (c) => c.deviceType),
+      clicksByHotspot: tally(clicks, (c) => c.hotspotId),
+    };
   }
-  const clicksByDevice = Array.from(deviceCounts.entries()).map(([device, count]) => ({ device, count }));
 
-  const byDate = new Map<string, { clicks: number; views: number }>();
-  for (const click of clicks) {
-    const date = click.createdAt.slice(0, 10);
-    const entry = byDate.get(date) ?? { clicks: 0, views: 0 };
-    entry.clicks += 1;
-    byDate.set(date, entry);
-  }
-  for (const view of views) {
-    const date = view.createdAt.slice(0, 10);
-    const entry = byDate.get(date) ?? { clicks: 0, views: 0 };
-    entry.views += 1;
-    byDate.set(date, entry);
-  }
-  const clicksOverTime = Array.from(byDate.entries())
-    .map(([date, v]) => ({ date, ...v }))
-    .sort((a, b) => a.date.localeCompare(b.date));
+  const viewsCol = db.collection<ViewEvent>("viewEvents");
+  const clicksCol = db.collection<ClickEvent>("clickEvents");
+  type Bucket = { _id: string; n: number };
+  const groupBy = (field: string) => [{ $group: { _id: field, n: { $sum: 1 } } }];
+  const byDate = [{ $group: { _id: { $substrBytes: ["$createdAt", 0, 10] }, n: { $sum: 1 } } }];
+  const toMap = (rows: Bucket[]) => new Map(rows.map((r) => [String(r._id), r.n]));
 
-  const clicksPerHotspot = new Map<string, number>();
-  for (const click of clicks) {
-    clicksPerHotspot.set(click.hotspotId, (clicksPerHotspot.get(click.hotspotId) ?? 0) + 1);
-  }
-  const topHotspots = Array.from(clicksPerHotspot.entries())
-    .map(([hotspotId, count]) => ({
+  const [totalViews, totalClicks, sessions, viewsByDate, clicksByDate, clicksByDevice, clicksByHotspot] =
+    await Promise.all([
+      viewsCol.estimatedDocumentCount(),
+      clicksCol.estimatedDocumentCount(),
+      viewsCol
+        .aggregate<{ n: number }>([
+          { $project: { sessionId: 1 } },
+          { $unionWith: { coll: "clickEvents", pipeline: [{ $project: { sessionId: 1 } }] } },
+          { $group: { _id: "$sessionId" } },
+          { $count: "n" },
+        ])
+        .toArray(),
+      viewsCol.aggregate<Bucket>(byDate).toArray(),
+      clicksCol.aggregate<Bucket>(byDate).toArray(),
+      clicksCol.aggregate<Bucket>(groupBy("$deviceType")).toArray(),
+      clicksCol.aggregate<Bucket>(groupBy("$hotspotId")).toArray(),
+    ]);
+
+  return {
+    totalViews,
+    totalClicks,
+    uniqueSessions: sessions[0]?.n ?? 0,
+    viewsByDate: toMap(viewsByDate),
+    clicksByDate: toMap(clicksByDate),
+    clicksByDevice: toMap(clicksByDevice),
+    clicksByHotspot: toMap(clicksByHotspot),
+  };
+}
+
+export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
+  const [counts, hotspots, categories] = await Promise.all([countEvents(), listAllHotspots(), listCategories()]);
+  const hotspotById = new Map(hotspots.map((h) => [h._id, h]));
+  const categoryById = new Map(categories.map((c) => [c._id, c]));
+
+  const dates = new Set([...counts.viewsByDate.keys(), ...counts.clicksByDate.keys()]);
+  const clicksOverTime = [...dates]
+    .sort()
+    .map((date) => ({ date, clicks: counts.clicksByDate.get(date) ?? 0, views: counts.viewsByDate.get(date) ?? 0 }));
+
+  const clicksByDevice = [...counts.clicksByDevice].map(([device, count]) => ({ device, count }));
+
+  const topHotspots = [...counts.clicksByHotspot]
+    .map(([hotspotId, clicks]) => ({
       hotspotId,
-      title: hotspots.find((h) => h._id === hotspotId)?.title ?? "Unknown product",
-      clicks: count,
+      title: hotspotById.get(hotspotId)?.title ?? "Unknown product",
+      clicks,
     }))
     .sort((a, b) => b.clicks - a.clicks)
     .slice(0, 5);
 
   // A click counts toward every category its product carries (a product can
   // belong to more than one), so totals across categories can exceed totalClicks.
-  const categories = await listCategories();
   const clicksPerCategory = new Map<string, number>();
-  for (const click of clicks) {
-    const hotspot = hotspots.find((h) => h._id === click.hotspotId);
-    for (const categoryId of hotspot?.categoryIds ?? []) {
-      clicksPerCategory.set(categoryId, (clicksPerCategory.get(categoryId) ?? 0) + 1);
+  for (const [hotspotId, clicks] of counts.clicksByHotspot) {
+    for (const categoryId of hotspotById.get(hotspotId)?.categoryIds ?? []) {
+      clicksPerCategory.set(categoryId, (clicksPerCategory.get(categoryId) ?? 0) + clicks);
     }
   }
-  const topCategories = Array.from(clicksPerCategory.entries())
-    .map(([categoryId, count]) => ({
+  const topCategories = [...clicksPerCategory]
+    .map(([categoryId, clicks]) => ({
       categoryId,
-      name: categories.find((c) => c._id === categoryId)?.name ?? "Unknown category",
-      clicks: count,
+      name: categoryById.get(categoryId)?.name ?? "Unknown category",
+      clicks,
     }))
     .sort((a, b) => b.clicks - a.clicks)
     .slice(0, 5);
 
-  return { totalViews, totalClicks, ctr, uniqueSessions, clicksByDevice, clicksOverTime, topHotspots, topCategories };
+  return {
+    totalViews: counts.totalViews,
+    totalClicks: counts.totalClicks,
+    ctr: counts.totalViews > 0 ? counts.totalClicks / counts.totalViews : 0,
+    uniqueSessions: counts.uniqueSessions,
+    clicksByDevice,
+    clicksOverTime,
+    topHotspots,
+    topCategories,
+  };
 }
 
 export interface ProductPerformanceRow {
@@ -445,28 +627,54 @@ export interface ProductPerformanceRow {
 
 /** Full (not top-N) per-product click totals, for CSV export/reporting — e.g. to a brand/affiliate partner. */
 export async function getProductPerformance(): Promise<ProductPerformanceRow[]> {
-  const db = await getDb();
-  const clicks: ClickEvent[] = db
-    ? await db.collection<ClickEvent>("clickEvents").find().toArray()
-    : getMemoryStore().clicks;
-
-  const [hotspots, images, categories] = await Promise.all([listAllHotspots(), listShoppableImages(), listCategories()]);
-
-  const clicksPerHotspot = new Map<string, number>();
-  for (const click of clicks) {
-    clicksPerHotspot.set(click.hotspotId, (clicksPerHotspot.get(click.hotspotId) ?? 0) + 1);
-  }
+  const [counts, hotspots, images, categories] = await Promise.all([
+    countEvents(),
+    listAllHotspots(),
+    listShoppableImages(),
+    listCategories(),
+  ]);
+  const imageById = new Map(images.map((i) => [i._id, i]));
+  const categoryById = new Map(categories.map((c) => [c._id, c]));
 
   return hotspots
     .map((hotspot) => ({
       hotspotId: hotspot._id,
       productTitle: hotspot.title,
-      lookTitle: images.find((i) => i._id === hotspot.shoppableImageId)?.title ?? "Unknown look",
+      lookTitle: imageById.get(hotspot.shoppableImageId)?.title ?? "Unknown look",
       categories: (hotspot.categoryIds ?? [])
-        .map((id) => categories.find((c) => c._id === id)?.name)
+        .map((id) => categoryById.get(id)?.name)
         .filter((name): name is string => Boolean(name))
         .join("; "),
-      clicks: clicksPerHotspot.get(hotspot._id) ?? 0,
+      clicks: counts.clicksByHotspot.get(hotspot._id) ?? 0,
     }))
     .sort((a, b) => b.clicks - a.clicks);
+}
+
+export const DEFAULT_SITE_SETTINGS: SiteSettings = {
+  siteName: "Aci",
+  creatorName: "",
+  tagline: "",
+  about: "",
+};
+
+export async function getSiteSettings(): Promise<SiteSettings> {
+  const db = await getDb();
+  if (!db) return { ...DEFAULT_SITE_SETTINGS, ...(getMemoryStore().settings ?? {}) };
+  const doc = await db.collection<SiteSettings & { _id: string }>("settings").findOne({ _id: "site" });
+  if (!doc) return DEFAULT_SITE_SETTINGS;
+  const { _id, ...settings } = doc;
+  void _id;
+  return { ...DEFAULT_SITE_SETTINGS, ...settings };
+}
+
+export async function updateSiteSettings(patch: Partial<SiteSettings>): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    const store = getMemoryStore();
+    store.settings = { ...DEFAULT_SITE_SETTINGS, ...(store.settings ?? {}), ...patch };
+    return;
+  }
+  await db
+    .collection<SiteSettings & { _id: string }>("settings")
+    .updateOne({ _id: "site" }, { $set: patch }, { upsert: true });
 }
