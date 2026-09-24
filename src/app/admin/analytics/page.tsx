@@ -24,7 +24,7 @@ export default async function AnalyticsPage() {
         <ClicksChart data={summary.clicksOverTime} />
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-6 md:grid-cols-3">
         <div className="rounded-xl border border-brown/10 bg-surface/70 p-4">
           <h2 className="mb-3 text-sm font-semibold text-brown">Top products</h2>
           {summary.topHotspots.length === 0 ? (
@@ -35,6 +35,22 @@ export default async function AnalyticsPage() {
                 <li key={h.hotspotId} className="flex items-center justify-between">
                   <span className="text-brown">{h.title}</span>
                   <span className="text-brown-soft">{h.clicks} clicks</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-brown/10 bg-surface/70 p-4">
+          <h2 className="mb-3 text-sm font-semibold text-brown">Top categories</h2>
+          {summary.topCategories.length === 0 ? (
+            <p className="text-sm text-brown-soft">No clicks recorded yet.</p>
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {summary.topCategories.map((c) => (
+                <li key={c.categoryId} className="flex items-center justify-between">
+                  <span className="text-brown">{c.name}</span>
+                  <span className="text-brown-soft">{c.clicks} clicks</span>
                 </li>
               ))}
             </ul>

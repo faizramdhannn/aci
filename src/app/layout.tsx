@@ -13,12 +13,30 @@ const caveat = Caveat({
   weight: ["600", "700"],
 });
 
+// Vercel sets VERCEL_PROJECT_PRODUCTION_URL/VERCEL_URL automatically; without an
+// absolute metadataBase, per-page openGraph images (relative URLs like
+// /uploads/xyz.jpg) can't be resolved by link-preview crawlers (WhatsApp,
+// Twitter/X, iMessage, etc.) and the OG image silently fails to show.
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
+  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+  : process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: "Aci — shop the look",
     template: "%s — Aci",
   },
   description: "Tap an item in the photo to see where it's from.",
+  openGraph: {
+    siteName: "Aci",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

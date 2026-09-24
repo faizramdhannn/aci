@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getShoppableImageById, getHeatmapForImage } from "@/lib/data";
+import { getShoppableImageById, getHeatmapForImage, listClickPointsForImage } from "@/lib/data";
 import { ClickHeatmap } from "@/components/analytics/click-heatmap";
 
 export const dynamic = "force-dynamic";
@@ -19,7 +19,7 @@ export default async function HeatmapPage({ params }: { params: Params }) {
   const image = await getShoppableImageById(id);
   if (!image) notFound();
 
-  const heat = await getHeatmapForImage(id);
+  const [heat, points] = await Promise.all([getHeatmapForImage(id), listClickPointsForImage(id)]);
   const totalClicks = heat.reduce((sum, h) => sum + h.clicks, 0);
   const sorted = [...heat].sort((a, b) => b.clicks - a.clicks);
 
@@ -28,7 +28,11 @@ export default async function HeatmapPage({ params }: { params: Params }) {
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-brown">{image.title} — click heatmap</h1>
-          <p className="text-sm text-brown-soft">Which product on this look gets the most attention.</p>
+          <p className="text-sm text-brown-soft">
+            {points.length > 0
+              ? "Real click positions on this look, not just which product."
+              : "Which product on this look gets the most attention."}
+          </p>
         </div>
         <Link
           href={`/admin/shoppable-images/${id}/edit`}
@@ -41,7 +45,7 @@ export default async function HeatmapPage({ params }: { params: Params }) {
       {totalClicks === 0 ? (
         <p className="mb-4 text-sm text-brown-soft">No clicks recorded on this look yet.</p>
       ) : (
-        <ClickHeatmap image={image} heat={heat} />
+        <ClickHeatmap image={image} heat={heat} points={points} />
       )}
 
       {totalClicks === 0 && (

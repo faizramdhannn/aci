@@ -4,6 +4,7 @@ import { BottomBar } from "@/components/navigation/bottom-bar";
 import type { Metadata } from "next";
 import { CategoryIcon } from "@/components/admin/category-icons";
 import { LookPreview } from "@/components/storefront/look-preview";
+import { FavoriteButton } from "@/components/storefront/favorite-button";
 import { listAllHotspots, listAnnotationsForImage, listCategories, listShoppableImages } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Categories" };
@@ -84,14 +85,17 @@ export default async function CategoriesPage({
           ) : (
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {visibleImages.map((image) => (
-                <Link key={image._id} href={`/p/${image.slug}`} className="group block">
-                  <LookPreview
-                    image={image}
-                    hotspots={allHotspots.filter((h) => h.shoppableImageId === image._id)}
-                    annotations={annotationsByImage[image._id]}
-                  />
-                  <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>
-                </Link>
+                <div key={image._id} className="group relative">
+                  <Link href={`/p/${image.slug}`} className="block">
+                    <LookPreview
+                      image={image}
+                      hotspots={allHotspots.filter((h) => h.shoppableImageId === image._id)}
+                      annotations={annotationsByImage[image._id]}
+                    />
+                    <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>
+                  </Link>
+                  <FavoriteButton imageId={image._id} className="absolute right-2 top-2" />
+                </div>
               ))}
             </div>
           )}

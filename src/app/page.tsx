@@ -3,6 +3,7 @@ import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
 import { HeroCarousel } from "@/components/storefront/hero-carousel";
 import { LookPreview } from "@/components/storefront/look-preview";
+import { FavoriteButton } from "@/components/storefront/favorite-button";
 import { listAllHotspots, listAnnotationsForImage, listShoppableImages } from "@/lib/data";
 
 // Content is managed from /admin and must reflect edits immediately —
@@ -46,14 +47,17 @@ export default async function HomePage() {
             <h2 className="mb-4 text-lg font-semibold text-brown">Your looks</h2>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {published.map((image) => (
-                <Link key={image._id} href={`/p/${image.slug}`} className="group block">
-                  <LookPreview
-                    image={image}
-                    hotspots={allHotspots.filter((h) => h.shoppableImageId === image._id)}
-                    annotations={annotationsByImage[image._id]}
-                  />
-                  <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>
-                </Link>
+                <div key={image._id} className="group relative">
+                  <Link href={`/p/${image.slug}`} className="block">
+                    <LookPreview
+                      image={image}
+                      hotspots={allHotspots.filter((h) => h.shoppableImageId === image._id)}
+                      annotations={annotationsByImage[image._id]}
+                    />
+                    <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>
+                  </Link>
+                  <FavoriteButton imageId={image._id} className="absolute right-2 top-2" />
+                </div>
               ))}
             </div>
           </section>
