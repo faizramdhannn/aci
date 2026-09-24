@@ -2,7 +2,8 @@ import Link from "next/link";
 import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
 import { HeroCarousel } from "@/components/storefront/hero-carousel";
-import { listShoppableImages } from "@/lib/data";
+import { LookPreview } from "@/components/storefront/look-preview";
+import { listAllHotspots, listAnnotationsForImage, listShoppableImages } from "@/lib/data";
 
 // Content is managed from /admin and must reflect edits immediately —
 // without this, Next statically prerenders the page at build time and
@@ -12,6 +13,13 @@ export const dynamic = "force-dynamic";
 export default async function HomePage() {
   const images = await listShoppableImages();
   const published = images.filter((i) => i.status === "published");
+
+  const allHotspots = await listAllHotspots();
+  const annotationsByImage = Object.fromEntries(
+    await Promise.all(
+      published.map(async (image) => [image._id, await listAnnotationsForImage(image._id)] as const)
+    )
+  );
 
   return (
     <>
@@ -39,17 +47,11 @@ export default async function HomePage() {
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
               {published.map((image) => (
                 <Link key={image._id} href={`/p/${image.slug}`} className="group block">
-                  <div
-                    className="relative overflow-hidden rounded-xl"
-                    style={{ aspectRatio: `${image.imageWidth} / ${image.imageHeight}` }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={image.imageUrl}
-                      alt={image.title}
-                      className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                    />
-                  </div>
+                  <LookPreview
+                    image={image}
+                    hotspots={allHotspots.filter((h) => h.shoppableImageId === image._id)}
+                    annotations={annotationsByImage[image._id]}
+                  />
                   <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>
                 </Link>
               ))}

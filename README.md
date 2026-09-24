@@ -104,6 +104,7 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 ## What's implemented
 
 - Public storefront (`/`, `/shop`, `/categories`, `/favorites`, `/p/[slug]`) with an editorial homepage, an auto-advancing hero carousel (5s interval, dot navigation, pauses correctly via cleanup), and a `<ShoppableImage />` component rendering hotspots over a photo
+- The "Your looks" grid on the homepage previews each look's product markers, arrows, and text annotations (not just the plain photo) via a non-interactive `<LookPreview />`, so it matches what you'll see after tapping through (`src/components/storefront/look-preview.tsx`)
 - Light/dark mode: follows the OS preference by default, toggle button persists an explicit choice to `localStorage` (`src/components/navigation/theme-toggle.tsx`, `src/app/globals.css`)
 - Desktop top bar and mobile bottom bar, both with a liquid-glass (`backdrop-filter: blur`) treatment, plus a compact mobile top strip with the logo and search
 - Custom logo (`public/aci-logo.png`) used across the top bar, admin sidebar, and login page
