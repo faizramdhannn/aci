@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { listShoppableImages } from "@/lib/data";
+import { ShoppableImagesTable } from "@/components/admin/shoppable-images-table";
 
 export const metadata: Metadata = { title: "Shoppable Images" };
 export const dynamic = "force-dynamic";
@@ -20,38 +21,7 @@ export default async function AdminShoppableImagesPage() {
         </Link>
       </div>
 
-      {images.length === 0 ? (
-        <p className="text-brown-soft">No shoppable images yet. Upload your first look to start adding product links.</p>
-      ) : (
-        <div className="overflow-hidden rounded-xl border border-brown/10">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-brown/5 text-xs uppercase tracking-wide text-brown-soft">
-              <tr>
-                <th className="px-4 py-3">Title</th>
-                <th className="px-4 py-3">Status</th>
-                <th className="px-4 py-3">Updated</th>
-                <th className="px-4 py-3" />
-              </tr>
-            </thead>
-            <tbody>
-              {images.map((image) => (
-                <tr key={image._id} className="border-t border-brown/10">
-                  <td className="px-4 py-3 font-medium text-brown">{image.title}</td>
-                  <td className="px-4 py-3 capitalize text-brown-soft">{image.status}</td>
-                  <td className="px-4 py-3 text-brown-soft">
-                    {new Date(image.updatedAt).toLocaleDateString("id-ID")}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <Link href={`/admin/shoppable-images/${image._id}/edit`} className="text-orange hover:underline">
-                      Edit
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <ShoppableImagesTable initialImages={images} />
     </div>
   );
 }

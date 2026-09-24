@@ -5,23 +5,29 @@ import type { Metadata } from "next";
 import { CategoryIcon } from "@/components/admin/category-icons";
 import { LookPreview } from "@/components/storefront/look-preview";
 import { FavoriteButton } from "@/components/storefront/favorite-button";
+import { Pagination } from "@/components/ui/pagination";
 import { listAllHotspots, listAnnotationsForImage, listCategories, listShoppableImages } from "@/lib/data";
+import { paginate } from "@/lib/pagination";
 
 export const metadata: Metadata = { title: "Categories" };
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 12;
+
 export default async function CategoriesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string }>;
+  searchParams: Promise<{ category?: string; page?: string }>;
 }) {
-  const { category: activeCategoryId } = await searchParams;
+  const { category: activeCategoryId, page: pageParam } = await searchParams;
+  const requestedPage = Math.max(1, Number(pageParam) || 1);
+
   const [categories, allImages, allHotspots] = await Promise.all([
     listCategories(),
     listShoppableImages(),
     listAllHotspots(),
   ]);
-  const images = allImages.filter((i) => i.status === "published");
+  const publishedImages = allImages.filter((i) => i.status === "published");
 
   const activeCategory = activeCategoryId
     ? categories.find((c) => c._id === activeCategoryId)
@@ -29,15 +35,18 @@ export default async function CategoriesPage({
 
   // A look matches a category either directly (set on upload) or through any
   // of its own products (hotspots) being tagged with that category.
-  const visibleImages = activeCategory
-    ? images.filter((i) => {
+  const matchingImages = activeCategory
+    ? publishedImages.filter((i) => {
         if (i.categoryIds.includes(activeCategory._id)) return true;
         return allHotspots.some(
           (h) => h.shoppableImageId === i._id && (h.categoryIds ?? []).includes(activeCategory._id)
         );
       })
-    : images;
+    : publishedImages;
 
+  const { items: visibleImages, page, totalPages } = paginate(matchingImages, requestedPage, PAGE_SIZE);
+
+  // Only fetch annotations for the images actually shown on this page.
   const annotationsByImage = Object.fromEntries(
     await Promise.all(
       visibleImages.map(async (image) => [image._id, await listAnnotationsForImage(image._id)] as const)
@@ -83,21 +92,29 @@ export default async function CategoriesPage({
           {visibleImages.length === 0 ? (
             <p className="text-brown-soft">Nothing here yet.</p>
           ) : (
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-              {visibleImages.map((image) => (
-                <div key={image._id} className="group relative">
-                  <Link href={`/p/${image.slug}`} className="block">
-                    <LookPreview
-                      image={image}
-                      hotspots={allHotspots.filter((h) => h.shoppableImageId === image._id)}
-                      annotations={annotationsByImage[image._id]}
-                    />
-                    <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>
-                  </Link>
-                  <FavoriteButton imageId={image._id} className="absolute right-2 top-2" />
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                {visibleImages.map((image) => (
+                  <div key={image._id} className="group relative">
+                    <Link href={`/p/${image.slug}`} className="block">
+                      <LookPreview
+                        image={image}
+                        hotspots={allHotspots.filter((h) => h.shoppableImageId === image._id)}
+                        annotations={annotationsByImage[image._id]}
+                      />
+                      <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>
+                    </Link>
+                    <FavoriteButton imageId={image._id} className="absolute right-2 top-2" />
+                  </div>
+                ))}
+              </div>
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                basePath="/categories"
+                searchParams={{ category: activeCategoryId }}
+              />
+            </>
           )}
         </div>
       </main>

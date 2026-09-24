@@ -123,6 +123,56 @@ export async function updateShoppableImage(
     .updateOne({ _id: id }, { $set: { ...patch, updatedAt: new Date().toISOString() } });
 }
 
+/** Deletes a look and cascades to its own hotspots/annotations. View/click history is left as-is (historical record). */
+export async function deleteShoppableImage(id: string): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    const store = getMemoryStore();
+    store.images = store.images.filter((i) => i._id !== id);
+    store.hotspots = store.hotspots.filter((h) => h.shoppableImageId !== id);
+    store.annotations = store.annotations.filter((a) => a.shoppableImageId !== id);
+    return;
+  }
+  await Promise.all([
+    db.collection<ShoppableImage>("shoppableImages").deleteOne({ _id: id }),
+    db.collection<Hotspot>("hotspots").deleteMany({ shoppableImageId: id }),
+    db.collection<Annotation>("annotations").deleteMany({ shoppableImageId: id }),
+  ]);
+}
+
+/**
+ * Duplicates a look (as a new draft, so nothing goes live by accident) along
+ * with all of its hotspots and annotations, remapped to the new image id.
+ */
+export async function duplicateShoppableImage(id: string): Promise<ShoppableImage | null> {
+  const original = await getShoppableImageById(id);
+  if (!original) return null;
+
+  const [hotspots, annotations] = await Promise.all([listHotspotsForImage(id), listAnnotationsForImage(id)]);
+
+  const now = new Date().toISOString();
+  const newImageId = randomUUID();
+  const copy: ShoppableImage = {
+    ...original,
+    _id: newImageId,
+    title: `${original.title} (copy)`,
+    slug: `${original.slug}-copy-${newImageId.slice(0, 8)}`,
+    status: "draft",
+    createdAt: now,
+    updatedAt: now,
+  };
+  await createShoppableImage(copy);
+
+  await Promise.all([
+    ...hotspots.map((h) => upsertHotspot({ ...h, _id: randomUUID(), shoppableImageId: newImageId, createdAt: now, updatedAt: now })),
+    ...annotations.map((a) =>
+      upsertAnnotation({ ...a, _id: randomUUID(), shoppableImageId: newImageId, createdAt: now, updatedAt: now })
+    ),
+  ]);
+
+  return copy;
+}
+
 export async function listCategories(): Promise<Category[]> {
   const db = await getDb();
   if (!db) return getMemoryStore().categories;
@@ -383,4 +433,40 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     .slice(0, 5);
 
   return { totalViews, totalClicks, ctr, uniqueSessions, clicksByDevice, clicksOverTime, topHotspots, topCategories };
+}
+
+export interface ProductPerformanceRow {
+  hotspotId: string;
+  productTitle: string;
+  lookTitle: string;
+  categories: string;
+  clicks: number;
+}
+
+/** Full (not top-N) per-product click totals, for CSV export/reporting — e.g. to a brand/affiliate partner. */
+export async function getProductPerformance(): Promise<ProductPerformanceRow[]> {
+  const db = await getDb();
+  const clicks: ClickEvent[] = db
+    ? await db.collection<ClickEvent>("clickEvents").find().toArray()
+    : getMemoryStore().clicks;
+
+  const [hotspots, images, categories] = await Promise.all([listAllHotspots(), listShoppableImages(), listCategories()]);
+
+  const clicksPerHotspot = new Map<string, number>();
+  for (const click of clicks) {
+    clicksPerHotspot.set(click.hotspotId, (clicksPerHotspot.get(click.hotspotId) ?? 0) + 1);
+  }
+
+  return hotspots
+    .map((hotspot) => ({
+      hotspotId: hotspot._id,
+      productTitle: hotspot.title,
+      lookTitle: images.find((i) => i._id === hotspot.shoppableImageId)?.title ?? "Unknown look",
+      categories: (hotspot.categoryIds ?? [])
+        .map((id) => categories.find((c) => c._id === id)?.name)
+        .filter((name): name is string => Boolean(name))
+        .join("; "),
+      clicks: clicksPerHotspot.get(hotspot._id) ?? 0,
+    }))
+    .sort((a, b) => b.clicks - a.clicks);
 }

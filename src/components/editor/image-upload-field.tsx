@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import NextImage from "next/image";
+import { compressImage } from "@/lib/compress-image";
 
 export interface UploadedImage {
   url: string;
@@ -47,8 +48,9 @@ export function ImageUploadField({
     setError(null);
     setLoading(true);
     try {
+      const compressed = await compressImage(file);
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressed);
       await finishUpload(await fetch("/api/uploads", { method: "POST", body: formData }));
     } catch {
       setError("Upload failed. Check your connection and try again.");
