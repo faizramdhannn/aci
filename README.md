@@ -80,7 +80,7 @@ This checkout already includes a working `.env.local` with a demo admin login, s
    Then seed it with the same demo data the in-memory fallback uses:
 
    ```bash
-   npm run seed
+   npm run seed -- --yes-wipe-everything
    ```
 
 5. **Image uploads (optional).** File upload works out of the box — drop a photo (JPEG/PNG/WEBP/GIF, up to 8MB) into the "Upload a look" form or the editor's "Change photo" panel, and it's saved to `public/uploads/` on your machine. That's fine for local development but won't survive a serverless deploy (ephemeral filesystem) or work with multiple server instances. For that, add a [Vercel Blob](https://vercel.com/docs/storage/vercel-blob) store and put its token in `BLOB_READ_WRITE_TOKEN` — the same upload endpoint automatically switches to Blob storage when that's set, no code changes needed.
@@ -98,7 +98,8 @@ npm run build   # production build
 npm run start   # run the production build
 npm run lint    # eslint
 npm run test    # vitest (coordinate conversion, etc.)
-npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
+npm run db:indexes   # create/update MongoDB indexes — safe to re-run, never touches data
+npm run seed -- --yes-wipe-everything   # DESTRUCTIVE: wipes the database and loads demo data
 ```
 
 ## What's implemented
@@ -142,7 +143,18 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 - Favorites: a heart button on every look card and on the look's own page saves it to `localStorage` (no visitor accounts exist, so favorites are per-device); `/favorites` lists them
 - Per-look Open Graph / Twitter Card previews when a `/p/[slug]` link is shared (photo, title, description); `metadataBase` is set from Vercel's own env vars so relative image URLs still resolve for link-preview crawlers
 - Coordinate system: all hotspot and arrow positions are normalized (0–1) relative to the source image — see `src/lib/coordinates.ts` / `src/lib/arrow-shapes.ts` and their tests
-- Data layer that transparently uses MongoDB when `MONGODB_URI` is set and reachable, or an in-memory store seeded with demo data otherwise (`src/lib/data.ts`)
+- Data layer that uses MongoDB when `MONGODB_URI` is set. The in-memory demo store is a **development-only** fallback: in production (`NODE_ENV=production`) a missing or unreachable database throws instead of silently serving demo looks or accepting admin edits that vanish on the next cold start (`src/lib/mongodb.ts`; set `ACI_ALLOW_MEMORY_FALLBACK=1` to opt back in, e.g. for a local `npm start` demo)
+- Look slugs are guaranteed unique (`golden-hour`, `golden-hour-2`, …) and backed by a unique index, so two looks with the same title can't shadow each other
+- `GET /api/shoppable-images` only returns published looks unless you're signed in, and draft looks 404 on `/p/[slug]`
+- Home, `/shop`, `/categories`, and search paginate and filter in MongoDB (`skip`/`limit`, `$in`) instead of loading the whole catalog into Node; analytics use aggregation pipelines instead of loading every view/click event
+- English/Indonesian: every public page is translated (`src/lib/i18n/dictionaries.ts`), defaults to English, and remembers the visitor's EN/ID choice in a cookie; `<html lang>` and `og:locale` follow it. The admin stays in English
+- Creator identity (site name, your name, tagline, photo, Instagram/TikTok, email, about text) is edited at `/admin/settings` and shown in the homepage hero and a site-wide footer, which also links to a privacy policy and an affiliate disclosure page
+- Homepage: two-column hero on desktop; the carousel shows looks you mark "★ Feature on homepage" in the editor (or just the newest one until you mark any), and the grid below never repeats a look that's already in the carousel
+- Look cards show the item count and category; look pages list "Items in this look" under the photo with price and an auto-detected store name ("Shop on Tokopedia"), plus pulsing hotspot markers and a one-time "tap the dots" hint
+- Admin is no longer linked from the public navigation — go to `/admin` directly
+- Default branded Open Graph image (`src/app/opengraph-image.tsx`) for pages without their own photo
+- Fonts load once, self-hosted via `next/font` (text annotations map their font name to next/font's family, so Konva and the SVG overlay still resolve it)
+- Light-mode orange darkened to `#ad520d` so orange text and buttons pass WCAG AA on cream
 
 ## Known limitations
 
@@ -156,6 +168,8 @@ Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to s
 - **Hotspot marker shape is fixed** (a small circular badge with a link icon). Color is customizable per hotspot; rotation is fully supported (drag the Transformer's rotate handle, or use the rotation slider) and persists correctly, but the badge looks the same at any angle — a small yellow dot on the canvas (editor only) marks which way it "faces" so the rotation is visible while editing.
 - **Arrow annotations don't support editing their style after creation** — you can change color, thickness, and drag either end to move/resize, but switching straight ↔ curved ↔ spiral means deleting and redrawing.
 - **Text annotations don't support rotation** in the UI yet (the data model has a `rotation` field, unused by the text tool for now).
+- **Dates are stored as ISO strings, not BSON `Date`** — sorting works, but a TTL index (e.g. auto-expiring year-old analytics events) would need a migration to `Date` first.
+- **Multi-document writes aren't transactional** — deleting or duplicating a look writes the look, its hotspots, and its annotations separately; a failure halfway could leave stragglers.
 - **The rate limiter on `/go/[hotspotId]` is in-memory**, not backed by Redis/Upstash — it resets on cold start and isn't shared across concurrent serverless instances. Good enough to deter casual spam/bots, not airtight at scale.
 - **"Import from URL" only works for public posts** that still expose an `og:image` tag, and only grabs the first/cover photo (not every image in a carousel post).
 
@@ -164,7 +178,8 @@ Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to s
 - Push to GitHub, import into Vercel.
 - Set the same environment variables from `.env.local` in the Vercel project settings (remembering the `$`-escaping gotcha above).
 - Add a MongoDB Atlas connection string for `MONGODB_URI` — the in-memory fallback only makes sense for local development, since Vercel's serverless functions don't share memory between invocations.
-- Run `npm run seed` locally against the production `MONGODB_URI` once, or build your own admin content from scratch via `/admin`.
+- Run `npm run db:indexes` against the production `MONGODB_URI` (safe, idempotent). **Never run `npm run seed` against production** — it wipes everything first.
+- Make sure `MONGODB_URI` is set in Vercel: production refuses to fall back to demo data.
 
 ## Project structure
 

@@ -1,18 +1,18 @@
-export const siteConfig = {
-  name: "Aci",
-  description: "Tap an item in the photo to see where it's from.",
-};
+import type { Dictionary } from "@/lib/i18n/dictionaries";
 
-export const desktopNavItems = [
-  { label: "Home", href: "/" },
-  { label: "Shop", href: "/shop" },
-  { label: "Categories", href: "/categories" },
+type NavKey = keyof Dictionary["nav"];
+
+// Admin is deliberately absent from public navigation — it's reached by
+// going to /admin directly.
+export const desktopNavItems: { key: NavKey; href: string }[] = [
+  { key: "home", href: "/" },
+  { key: "shop", href: "/shop" },
+  { key: "categories", href: "/categories" },
 ];
 
 export const mobileNavItems = [
-  { label: "Home", href: "/", icon: "home" },
-  { label: "Explore", href: "/shop", icon: "explore" },
-  { label: "Categories", href: "/categories", icon: "grid" },
-  { label: "Favorites", href: "/favorites", icon: "heart" },
-  { label: "Profile", href: "/admin", icon: "user" },
-] as const;
+  { key: "home", href: "/", icon: "home" },
+  { key: "explore", href: "/shop", icon: "explore" },
+  { key: "categories", href: "/categories", icon: "grid" },
+  { key: "favorites", href: "/favorites", icon: "heart" },
+] as const satisfies readonly { key: NavKey; href: string; icon: string }[];

@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { isFavorite, toggleFavorite } from "@/lib/favorites";
+import { useDictionary } from "@/components/i18n/locale-provider";
 
 export function FavoriteButton({ imageId, className = "" }: { imageId: string; className?: string }) {
+  const t = useDictionary();
   const [favorited, setFavorited] = useState(false);
 
   // Read from localStorage only after mount so server and first client
@@ -16,7 +18,7 @@ export function FavoriteButton({ imageId, className = "" }: { imageId: string; c
   return (
     <button
       type="button"
-      aria-label={favorited ? "Remove from favorites" : "Add to favorites"}
+      aria-label={favorited ? t.favorites.remove : t.favorites.add}
       aria-pressed={favorited}
       onClick={(e) => {
         e.preventDefault();

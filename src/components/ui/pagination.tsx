@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { format, type Dictionary } from "@/lib/i18n/dictionaries";
 
 /** Plain Link-based pager (works with JS disabled) — appends/replaces ?page= on the given base path+query. */
 export function Pagination({
@@ -6,11 +7,13 @@ export function Pagination({
   totalPages,
   basePath,
   searchParams = {},
+  t,
 }: {
   page: number;
   totalPages: number;
   basePath: string;
   searchParams?: Record<string, string | undefined>;
+  t: Dictionary;
 }) {
   if (totalPages <= 1) return null;
 
@@ -28,20 +31,20 @@ export function Pagination({
     <nav className="mt-8 flex items-center justify-center gap-4" aria-label="Pagination">
       {page > 1 ? (
         <Link href={hrefFor(page - 1)} className="text-sm font-medium text-brown hover:text-orange">
-          ← Previous
+          {t.pagination.previous}
         </Link>
       ) : (
-        <span className="text-sm font-medium text-brown-soft/40">← Previous</span>
+        <span className="text-sm font-medium text-brown-soft/40">{t.pagination.previous}</span>
       )}
       <span className="text-sm text-brown-soft">
-        Page {page} of {totalPages}
+        {format(t.pagination.pageOf, { page, total: totalPages })}
       </span>
       {page < totalPages ? (
         <Link href={hrefFor(page + 1)} className="text-sm font-medium text-brown hover:text-orange">
-          Next →
+          {t.pagination.next}
         </Link>
       ) : (
-        <span className="text-sm font-medium text-brown-soft/40">Next →</span>
+        <span className="text-sm font-medium text-brown-soft/40">{t.pagination.next}</span>
       )}
     </nav>
   );

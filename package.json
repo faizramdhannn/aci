@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "db:indexes": "tsx scripts/ensure-indexes.ts"
   },
   "dependencies": {
     "@vercel/blob": "^2.8.0",

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useDictionary } from "@/components/i18n/locale-provider";
 
 function SearchIcon() {
   return (
@@ -14,6 +15,7 @@ function SearchIcon() {
 
 export function SearchPopover({ variant = "desktop" }: { variant?: "desktop" | "mobile" }) {
   const router = useRouter();
+  const t = useDictionary();
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
@@ -52,7 +54,7 @@ export function SearchPopover({ variant = "desktop" }: { variant?: "desktop" | "
           type="text"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="Search…"
+          placeholder={t.nav.searchPlaceholder}
           className={`w-full bg-transparent text-sm text-brown outline-none placeholder:text-brown-soft ${isMobile ? "" : "border-b border-brown/20 pb-0.5"}`}
         />
       </form>
@@ -60,7 +62,7 @@ export function SearchPopover({ variant = "desktop" }: { variant?: "desktop" | "
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Search"
+        aria-label={t.nav.search}
         aria-expanded={open}
         className={
           isMobile
@@ -69,7 +71,7 @@ export function SearchPopover({ variant = "desktop" }: { variant?: "desktop" | "
         }
       >
         <SearchIcon />
-        {!isMobile && !open && <span>Search</span>}
+        {!isMobile && !open && <span>{t.nav.search}</span>}
       </button>
     </div>
   );

@@ -61,7 +61,7 @@ export function ShoppableImage({
             key={hotspot._id}
             href={`/go/${hotspot._id}`}
             target="_blank"
-            rel="noopener noreferrer"
+            rel="noopener noreferrer sponsored"
             aria-label={`Shop ${hotspot.title}`}
             title={hotspot.title}
             onClick={(e) => {
@@ -90,7 +90,13 @@ export function ShoppableImage({
               minHeight: 28,
             }}
           >
-            <LinkMarker color={hotspot.color} size={26} />
+            <span
+              aria-hidden
+              className="hotspot-pulse pointer-events-none absolute left-1/2 top-1/2 -ml-[14px] -mt-[14px] h-7 w-7 rounded-full bg-cream"
+            />
+            <span className="relative">
+              <LinkMarker color={hotspot.color} size={28} />
+            </span>
           </a>
         ))}
     </div>

@@ -6,6 +6,7 @@ const adminNavItems = [
   { label: "Shoppable Images", href: "/admin/shoppable-images" },
   { label: "Categories", href: "/admin/categories" },
   { label: "Analytics", href: "/admin/analytics" },
+  { label: "Settings", href: "/admin/settings" },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

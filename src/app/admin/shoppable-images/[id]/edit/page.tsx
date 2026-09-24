@@ -6,6 +6,7 @@ import { HotspotEditor } from "@/components/editor/hotspot-editor";
 import { PublishToggle } from "@/components/editor/publish-toggle";
 import { ChangePhoto } from "@/components/editor/change-photo";
 import { LookCategoriesEditor } from "@/components/editor/look-categories-editor";
+import { FeaturedToggle } from "@/components/editor/featured-toggle";
 
 export const dynamic = "force-dynamic";
 
@@ -43,6 +44,7 @@ export default async function EditShoppableImagePage({ params }: { params: Param
             Heatmap
           </Link>
           <ChangePhoto imageId={image._id} />
+          <FeaturedToggle imageId={image._id} featured={Boolean(image.featured)} />
           <PublishToggle imageId={image._id} status={image.status} />
         </div>
       </div>

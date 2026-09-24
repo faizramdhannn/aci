@@ -1,4 +1,4 @@
-type IconName = "home" | "explore" | "grid" | "heart" | "user";
+type IconName = "home" | "explore" | "grid" | "heart";
 
 const strokeProps = {
   fill: "none",
@@ -40,13 +40,6 @@ export function NavIcon({ name, active }: { name: IconName; active?: boolean }) 
       return (
         <svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity} {...strokeProps}>
           <path d="M12 20s-7-4.35-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 5c-2.5 4.65-9.5 9-9.5 9Z" />
-        </svg>
-      );
-    case "user":
-      return (
-        <svg width={size} height={size} viewBox="0 0 24 24" opacity={opacity} {...strokeProps}>
-          <circle cx="12" cy="8" r="3.5" />
-          <path d="M5 20c1.2-3.5 4-5 7-5s5.8 1.5 7 5" />
         </svg>
       );
   }
