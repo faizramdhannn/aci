@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Image from "next/image";
 import type { Annotation, Hotspot, ShoppableImage as ShoppableImageType } from "@/types";
 import { LinkMarker } from "@/components/storefront/link-marker";
 import { AnnotationOverlay } from "@/components/storefront/annotation-overlay";
@@ -42,8 +43,14 @@ export function ShoppableImage({
       className="relative w-full overflow-hidden rounded-2xl"
       style={{ aspectRatio: `${image.imageWidth} / ${image.imageHeight}` }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={image.imageUrl} alt={image.title} className="h-full w-full object-cover" />
+      <Image
+        src={image.imageUrl}
+        alt={image.title}
+        fill
+        sizes="(min-width: 768px) 672px, 100vw"
+        priority
+        className="object-cover"
+      />
 
       <AnnotationOverlay annotations={annotations} imageWidth={image.imageWidth} imageHeight={image.imageHeight} />
 

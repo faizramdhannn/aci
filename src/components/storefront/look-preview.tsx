@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { Annotation, Hotspot, ShoppableImage as ShoppableImageType } from "@/types";
 import { LinkMarker } from "@/components/storefront/link-marker";
 import { AnnotationOverlay } from "@/components/storefront/annotation-overlay";
@@ -22,11 +23,12 @@ export function LookPreview({
       className="relative w-full overflow-hidden rounded-xl"
       style={{ aspectRatio: `${image.imageWidth} / ${image.imageHeight}` }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
+      <Image
         src={image.imageUrl}
         alt={image.title}
-        className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+        fill
+        sizes="(min-width: 768px) 25vw, 50vw"
+        className="object-cover transition-transform duration-200 group-hover:scale-105"
       />
 
       <AnnotationOverlay annotations={annotations} imageWidth={image.imageWidth} imageHeight={image.imageHeight} />

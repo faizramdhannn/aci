@@ -1,7 +1,8 @@
+import Image from "next/image";
+
 export function Logo({ size = 28, className = "" }: { size?: number; className?: string }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src="/aci-logo.png"
       alt="Aci"
       width={size}

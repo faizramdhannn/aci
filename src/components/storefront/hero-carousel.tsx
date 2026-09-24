@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { ShoppableImage } from "@/types";
 
 const SLIDE_MS = 5000;
@@ -34,8 +35,14 @@ export function HeroCarousel({ images }: { images: ShoppableImage[] }) {
             aria-hidden={i !== index}
             tabIndex={i === index ? 0 : -1}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={image.imageUrl} alt={image.title} className="h-full w-full object-cover" />
+            <Image
+              src={image.imageUrl}
+              alt={image.title}
+              fill
+              sizes="(min-width: 768px) 448px, 100vw"
+              priority={i === 0}
+              className="object-cover"
+            />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-brown/70 to-transparent p-5">
               <p className="text-sm font-medium text-cream">{image.title}</p>
             </div>
