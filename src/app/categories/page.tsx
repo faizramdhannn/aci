@@ -3,7 +3,8 @@ import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
 import type { Metadata } from "next";
 import { CategoryIcon } from "@/components/admin/category-icons";
-import { listAllHotspots, listCategories, listShoppableImages } from "@/lib/data";
+import { LookPreview } from "@/components/storefront/look-preview";
+import { listAllHotspots, listAnnotationsForImage, listCategories, listShoppableImages } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Categories" };
 export const dynamic = "force-dynamic";
@@ -35,6 +36,12 @@ export default async function CategoriesPage({
         );
       })
     : images;
+
+  const annotationsByImage = Object.fromEntries(
+    await Promise.all(
+      visibleImages.map(async (image) => [image._id, await listAnnotationsForImage(image._id)] as const)
+    )
+  );
 
   return (
     <>
@@ -78,17 +85,11 @@ export default async function CategoriesPage({
             <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {visibleImages.map((image) => (
                 <Link key={image._id} href={`/p/${image.slug}`} className="group block">
-                  <div
-                    className="relative overflow-hidden rounded-xl"
-                    style={{ aspectRatio: `${image.imageWidth} / ${image.imageHeight}` }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={image.imageUrl}
-                      alt={image.title}
-                      className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                    />
-                  </div>
+                  <LookPreview
+                    image={image}
+                    hotspots={allHotspots.filter((h) => h.shoppableImageId === image._id)}
+                    annotations={annotationsByImage[image._id]}
+                  />
                   <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>
                 </Link>
               ))}
