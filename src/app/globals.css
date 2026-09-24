@@ -113,3 +113,15 @@ body {
     opacity: 0;
   }
 }
+
+/* Lazydog (splash wordmark). Not on Google Fonts, so it's self-hosted from
+   public/fonts/ — until the file is added there, the splash falls back to a
+   serif. */
+@font-face {
+  font-family: "Lazydog";
+  src:
+    url("/fonts/Lazydog.woff2") format("woff2"),
+    url("/fonts/Lazydog.otf") format("opentype"),
+    url("/fonts/Lazydog.ttf") format("truetype");
+  font-display: block;
+}
