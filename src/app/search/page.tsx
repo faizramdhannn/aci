@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { TopBar } from "@/components/navigation/top-bar";
 import { BottomBar } from "@/components/navigation/bottom-bar";
@@ -45,11 +46,12 @@ export default async function SearchPage({ searchParams }: { searchParams: Searc
                   className="relative overflow-hidden rounded-xl"
                   style={{ aspectRatio: `${image.imageWidth} / ${image.imageHeight}` }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                  <Image
                     src={image.imageUrl}
                     alt={image.title}
-                    className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                    fill
+                    sizes="(min-width: 768px) 33vw, 50vw"
+                    className="object-cover transition-transform duration-200 group-hover:scale-105"
                   />
                 </div>
                 <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>

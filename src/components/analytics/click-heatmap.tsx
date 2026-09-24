@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { HotspotHeat } from "@/lib/data";
 import type { ShoppableImage } from "@/types";
 
@@ -24,8 +25,7 @@ export function ClickHeatmap({
       className="relative w-full overflow-hidden rounded-2xl"
       style={{ aspectRatio: `${image.imageWidth} / ${image.imageHeight}` }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={image.imageUrl} alt={image.title} className="h-full w-full object-cover" />
+      <Image src={image.imageUrl} alt={image.title} fill sizes="672px" className="object-cover" />
 
       {points.length > 0
         ? points.map((p, i) => (

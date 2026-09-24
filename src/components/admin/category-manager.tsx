@@ -5,9 +5,11 @@ import { useRouter } from "next/navigation";
 import type { Category } from "@/types";
 import { CategoryIcon } from "@/components/admin/category-icons";
 import { IconPicker } from "@/components/admin/icon-picker";
+import { useToast } from "@/components/ui/toast-provider";
 
 export function CategoryManager({ initialCategories }: { initialCategories: Category[] }) {
   const router = useRouter();
+  const toast = useToast();
   const [categories, setCategories] = useState(initialCategories);
   const [name, setName] = useState("");
   const [icon, setIcon] = useState<string | undefined>(undefined);
@@ -39,45 +41,71 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     setCategories((prev) => [...prev, category]);
     setName("");
     setIcon(undefined);
+    toast(`"${category.name}" added.`);
     router.refresh();
   }
 
   async function onRename(id: string) {
     if (!editName.trim()) return;
-    await fetch(`/api/categories/${id}`, {
+    const previous = categories;
+    setCategories((prev) => prev.map((c) => (c._id === id ? { ...c, name: editName.trim() } : c)));
+    setEditingId(null);
+    const res = await fetch(`/api/categories/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name: editName.trim() }),
     });
-    setCategories((prev) => prev.map((c) => (c._id === id ? { ...c, name: editName.trim() } : c)));
-    setEditingId(null);
+    if (!res.ok) {
+      setCategories(previous);
+      toast("Couldn't rename that category.", "error");
+      return;
+    }
     router.refresh();
   }
 
   async function onChangeIcon(id: string, iconName: string) {
+    const previous = categories;
     setCategories((prev) => prev.map((c) => (c._id === id ? { ...c, icon: iconName } : c)));
-    await fetch(`/api/categories/${id}`, {
+    const res = await fetch(`/api/categories/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ icon: iconName }),
     });
+    if (!res.ok) {
+      setCategories(previous);
+      toast("Couldn't update the icon.", "error");
+      return;
+    }
     router.refresh();
   }
 
   async function onToggleActive(category: Category) {
     const isActive = !category.isActive;
-    await fetch(`/api/categories/${category._id}`, {
+    const previous = categories;
+    setCategories((prev) => prev.map((c) => (c._id === category._id ? { ...c, isActive } : c)));
+    const res = await fetch(`/api/categories/${category._id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ isActive }),
     });
-    setCategories((prev) => prev.map((c) => (c._id === category._id ? { ...c, isActive } : c)));
+    if (!res.ok) {
+      setCategories(previous);
+      toast("Couldn't update that category.", "error");
+      return;
+    }
     router.refresh();
   }
 
   async function onDelete(id: string) {
+    const previous = categories;
     setCategories((prev) => prev.filter((c) => c._id !== id));
-    await fetch(`/api/categories/${id}`, { method: "DELETE" });
+    const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
+    if (!res.ok) {
+      setCategories(previous);
+      toast("Couldn't delete that category.", "error");
+      return;
+    }
+    toast("Category deleted.");
     router.refresh();
   }
 

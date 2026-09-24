@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Caveat } from "next/font/google";
+import { ToastProvider } from "@/components/ui/toast-provider";
+import { siteUrl } from "@/lib/site-url";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -12,16 +14,6 @@ const caveat = Caveat({
   subsets: ["latin"],
   weight: ["600", "700"],
 });
-
-// Vercel sets VERCEL_PROJECT_PRODUCTION_URL/VERCEL_URL automatically; without an
-// absolute metadataBase, per-page openGraph images (relative URLs like
-// /uploads/xyz.jpg) can't be resolved by link-preview crawlers (WhatsApp,
-// Twitter/X, iMessage, etc.) and the OG image silently fails to show.
-const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL
-  ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
-  : process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : "http://localhost:3000";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -60,7 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full flex flex-col bg-cream text-brown" suppressHydrationWarning>
-        {children}
+        <ToastProvider>{children}</ToastProvider>
       </body>
     </html>
   );

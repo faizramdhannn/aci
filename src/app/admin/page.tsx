@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { listShoppableImages, getAnalyticsSummary } from "@/lib/data";
 
@@ -43,8 +44,13 @@ export default async function AdminOverviewPage() {
                 className="relative overflow-hidden rounded-xl border border-brown/10"
                 style={{ aspectRatio: `${image.imageWidth} / ${image.imageHeight}` }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={image.imageUrl} alt={image.title} className="h-full w-full object-cover" />
+                <Image
+                  src={image.imageUrl}
+                  alt={image.title}
+                  fill
+                  sizes="(min-width: 768px) 25vw, 50vw"
+                  className="object-cover"
+                />
                 <span className="absolute right-2 top-2 rounded-full bg-brown/80 px-2 py-0.5 text-[10px] uppercase tracking-wide text-cream">
                   {image.status}
                 </span>

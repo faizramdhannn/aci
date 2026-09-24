@@ -2,20 +2,29 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useToast } from "@/components/ui/toast-provider";
 
 export function PublishToggle({ imageId, status }: { imageId: string; status: "draft" | "published" }) {
   const router = useRouter();
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const isPublished = status === "published";
 
   async function toggle() {
     setLoading(true);
-    await fetch(`/api/shoppable-images/${imageId}`, {
+    const nextStatus = isPublished ? "draft" : "published";
+    const res = await fetch(`/api/shoppable-images/${imageId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: isPublished ? "draft" : "published" }),
+      body: JSON.stringify({ status: nextStatus }),
     });
     setLoading(false);
+
+    if (!res.ok) {
+      toast("Couldn't update the publish status.", "error");
+      return;
+    }
+    toast(nextStatus === "published" ? "Published." : "Moved back to draft.");
     router.refresh();
   }
 

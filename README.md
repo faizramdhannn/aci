@@ -119,6 +119,12 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 - View tracking on shoppable image pages (device/browser/OS parsed from the user agent, session cookie)
 - Admin: email/password login (single account, env-configured), protected `/admin/*` routes via `src/proxy.ts`
 - Image upload: drag-and-drop or file picker, validated server-side (type + 8MB size limit), saved to `public/uploads/` locally or Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set (`src/lib/storage.ts`) — used both when creating a new look and to replace an existing look's photo from the editor
+- "Import from URL": paste a public Instagram or TikTok post link instead of uploading a file — fetches the post's own `og:image` (no API keys/OAuth) and runs it through the same upload pipeline (`src/lib/import-from-url.ts`, `/api/uploads/import`). Only works for posts public enough to expose that tag
+- All images (storefront, admin, editor previews) render through `next/image` for automatic resizing/format/lazy-loading instead of plain `<img>` tags
+- Skeleton loading states (`loading.tsx`) on the home, shop, categories, and look pages instead of a blank flash while data loads
+- Toast notifications (`src/components/ui/toast-provider.tsx`) confirm or surface failures for admin actions that previously failed silently: publish/unpublish, replacing a photo, editing look categories, and category create/rename/archive/delete
+- `/go/[hotspotId]` is rate-limited per IP+hotspot (in-memory, 5 recorded clicks/minute) to keep click analytics from being trivially inflated by spam — the affiliate redirect itself is never blocked, only the click recording
+- `sitemap.xml` and `robots.txt` (Next's built-in `sitemap.ts`/`robots.ts`) so published looks are discoverable by search engines; `/admin*` and `/api*` are disallowed
 - Admin overview, shoppable images list, and a Canva-like hotspot editor (React Konva: drag, resize + rotate via Transformer or a precise rotation slider, add/delete hotspots, autosave, publish/unpublish). "Add Product" opens as a modal popup with a marker-color picker; "Add Arrow" draws annotations
 - Analytics dashboard: totals, CTR, clicks/views over time chart, top products, top categories (a click counts toward every category its product carries), device breakdown
 - Click heatmap per look (`/admin/shoppable-images/[id]/heatmap`): renders a true per-pixel density cloud from each click's real position on the photo (captured client-side when a hotspot is clicked, sent to `/go/[hotspotId]?cx=&cy=`). Clicks recorded before this shipped have no position, so the page falls back to a per-hotspot blob for those
@@ -142,6 +148,8 @@ Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to s
 - **Hotspot marker shape is fixed** (a small circular badge with a link icon). Color is customizable per hotspot; rotation is fully supported (drag the Transformer's rotate handle, or use the rotation slider) and persists correctly, but the badge looks the same at any angle — a small yellow dot on the canvas (editor only) marks which way it "faces" so the rotation is visible while editing.
 - **Arrow annotations don't support editing their style after creation** — you can change color, thickness, and drag either end to move/resize, but switching straight ↔ curved ↔ spiral means deleting and redrawing.
 - **Text annotations don't support rotation** in the UI yet (the data model has a `rotation` field, unused by the text tool for now).
+- **The rate limiter on `/go/[hotspotId]` is in-memory**, not backed by Redis/Upstash — it resets on cold start and isn't shared across concurrent serverless instances. Good enough to deter casual spam/bots, not airtight at scale.
+- **"Import from URL" only works for public posts** that still expose an `og:image` tag, and only grabs the first/cover photo (not every image in a carousel post).
 
 ## Deploying
 

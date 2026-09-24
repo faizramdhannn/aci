@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { randomUUID } from "crypto";
 import { getHotspotById, recordClick } from "@/lib/data";
 import { parseUserAgent } from "@/lib/user-agent";
+import { allowRateLimitedHit } from "@/lib/rate-limit";
 
 const SESSION_COOKIE = "aci_session";
 
@@ -25,6 +26,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { deviceType, browser, os } = parseUserAgent(request.headers.get("user-agent"));
   const sessionId = request.cookies.get(SESSION_COOKIE)?.value ?? randomUUID();
 
+  // Guards against a single client hammering the same hotspot to inflate
+  // click analytics. Keyed by IP (not the session cookie, since clearing
+  // cookies would otherwise reset the limit) + hotspot. The affiliate
+  // redirect itself is never blocked — only the click recording is skipped.
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+  const shouldRecord = allowRateLimitedHit(`${ip}:${hotspot._id}`);
+
   // cx/cy is the real click position (normalized 0-1 on the photo), sent by
   // the storefront's click handler — used for a true per-pixel heatmap
   // instead of bucketing every click onto the hotspot's own position.
@@ -32,19 +40,21 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const cy = Number(request.nextUrl.searchParams.get("cy"));
   const hasClickPosition = Number.isFinite(cx) && Number.isFinite(cy) && cx >= 0 && cx <= 1 && cy >= 0 && cy <= 1;
 
-  await recordClick({
-    hotspotId: hotspot._id,
-    shoppableImageId: hotspot.shoppableImageId,
-    ownerId: hotspot.ownerId,
-    sessionId,
-    deviceType,
-    browser,
-    os,
-    viewportWidth: 0,
-    viewportHeight: 0,
-    referrer: request.headers.get("referer") ?? undefined,
-    ...(hasClickPosition ? { clickX: cx, clickY: cy } : {}),
-  });
+  if (shouldRecord) {
+    await recordClick({
+      hotspotId: hotspot._id,
+      shoppableImageId: hotspot.shoppableImageId,
+      ownerId: hotspot.ownerId,
+      sessionId,
+      deviceType,
+      browser,
+      os,
+      viewportWidth: 0,
+      viewportHeight: 0,
+      referrer: request.headers.get("referer") ?? undefined,
+      ...(hasClickPosition ? { clickX: cx, clickY: cy } : {}),
+    });
+  }
 
   const response = NextResponse.redirect(hotspot.affiliateUrl, { status: 302 });
   response.cookies.set(SESSION_COOKIE, sessionId, {

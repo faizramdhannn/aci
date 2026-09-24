@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageUploadField, type UploadedImage } from "@/components/editor/image-upload-field";
+import { useToast } from "@/components/ui/toast-provider";
 
 export function ChangePhoto({ imageId }: { imageId: string }) {
   const router = useRouter();
+  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [uploaded, setUploaded] = useState<UploadedImage | null>(null);
   const [saving, setSaving] = useState(false);
@@ -24,12 +26,18 @@ export function ChangePhoto({ imageId }: { imageId: string }) {
   async function onUpload(image: UploadedImage) {
     setUploaded(image);
     setSaving(true);
-    await fetch(`/api/shoppable-images/${imageId}`, {
+    const res = await fetch(`/api/shoppable-images/${imageId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imageUrl: image.url, imageWidth: image.width, imageHeight: image.height }),
     });
     setSaving(false);
+
+    if (!res.ok) {
+      toast("Couldn't save the new photo.", "error");
+      return;
+    }
+    toast("Photo replaced.");
     setOpen(false);
     setUploaded(null);
     router.refresh();

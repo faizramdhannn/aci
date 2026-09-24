@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { getShoppableImageById, getHeatmapForImage, listClickPointsForImage } from "@/lib/data";
 import { ClickHeatmap } from "@/components/analytics/click-heatmap";
@@ -53,8 +54,7 @@ export default async function HeatmapPage({ params }: { params: Params }) {
           className="relative w-full overflow-hidden rounded-2xl opacity-60"
           style={{ aspectRatio: `${image.imageWidth} / ${image.imageHeight}` }}
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={image.imageUrl} alt={image.title} className="h-full w-full object-cover" />
+          <Image src={image.imageUrl} alt={image.title} fill sizes="672px" className="object-cover" />
         </div>
       )}
 
