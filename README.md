@@ -120,11 +120,14 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 - Admin: email/password login (single account, env-configured), protected `/admin/*` routes via `src/proxy.ts`
 - Image upload: drag-and-drop or file picker, validated server-side (type + 8MB size limit), saved to `public/uploads/` locally or Vercel Blob when `BLOB_READ_WRITE_TOKEN` is set (`src/lib/storage.ts`) — used both when creating a new look and to replace an existing look's photo from the editor
 - Admin overview, shoppable images list, and a Canva-like hotspot editor (React Konva: drag, resize + rotate via Transformer or a precise rotation slider, add/delete hotspots, autosave, publish/unpublish). "Add Product" opens as a modal popup with a marker-color picker; "Add Arrow" draws annotations
-- Analytics dashboard: totals, CTR, clicks/views over time chart, top products, device breakdown
-- Click heatmap per look (`/admin/shoppable-images/[id]/heatmap`): overlays each product's click count as a heat blob at its hotspot position — an approximation, since clicks are tracked per-hotspot rather than by raw pointer coordinate (see Known limitations)
+- Analytics dashboard: totals, CTR, clicks/views over time chart, top products, top categories (a click counts toward every category its product carries), device breakdown
+- Click heatmap per look (`/admin/shoppable-images/[id]/heatmap`): renders a true per-pixel density cloud from each click's real position on the photo (captured client-side when a hotspot is clicked, sent to `/go/[hotspotId]?cx=&cy=`). Clicks recorded before this shipped have no position, so the page falls back to a per-hotspot blob for those
 - Category management (`/admin/categories`): create, rename, reorder (used as the public sort order), archive/restore, delete, and pick an icon from a curated lucide-react set (`src/components/admin/category-icons.tsx`) — also selectable when uploading a new look
-- Site search (`/search`): matches shoppable image titles/descriptions and product (hotspot) names, case-insensitive; linked from the desktop top bar and a compact mobile search button
+- A look's own categories are editable any time from its editor page (`LookCategoriesEditor`), not just at upload
+- Site search (`/search`): ranks results (exact match > prefix > substring > a lightly typo-tolerant edit-distance fallback) across shoppable image titles/descriptions and product (hotspot) names; linked from the desktop top bar and a compact mobile search button
 - Categories page (`/categories`): filter looks by category via clickable chips (`?category=<id>`), "All" resets the filter. A look matches a category either directly (set on upload) or through any of its own products being tagged with that category
+- Favorites: a heart button on every look card and on the look's own page saves it to `localStorage` (no visitor accounts exist, so favorites are per-device); `/favorites` lists them
+- Per-look Open Graph / Twitter Card previews when a `/p/[slug]` link is shared (photo, title, description); `metadataBase` is set from Vercel's own env vars so relative image URLs still resolve for link-preview crawlers
 - Coordinate system: all hotspot and arrow positions are normalized (0–1) relative to the source image — see `src/lib/coordinates.ts` / `src/lib/arrow-shapes.ts` and their tests
 - Data layer that transparently uses MongoDB when `MONGODB_URI` is set and reachable, or an in-memory store seeded with demo data otherwise (`src/lib/data.ts`)
 
@@ -133,12 +136,10 @@ npm run seed    # seed MongoDB with demo data (requires MONGODB_URI)
 Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to ship a working MVP:
 
 - **Single admin account only**, configured via env vars — no multi-user/multi-tenant support, no signup flow.
-- **Heatmap is per-hotspot, not per-pixel.** The "Shop product" CTA is a plain link (not a coordinate-tracked click), so the heatmap shows which *product* got clicked, placed at that hotspot's fixed position — not a true density map of exactly where on the photo people clicked. The `clickX`/`clickY` fields exist in the data model for that finer-grained version, just not populated yet.
-- **Search is a simple substring match** (`$regex` in Mongo, `.includes()` in the in-memory fallback) — fine at this scale, not a real search engine (no ranking, typo tolerance, etc).
+- **Search has no stemming or synonyms** — ranking and a light typo tolerance help, but it's still not a real search engine.
 - **Analytics aggregation happens in Node**, not via MongoDB aggregation pipelines — fine at demo scale, would need revisiting for real traffic volume.
-- **Favorites page is a stub** — no persistence.
+- **Favorites are per-device, not per-account** — they live in `localStorage`, so they don't follow you to another browser or device (there are no visitor accounts to attach them to).
 - **Hotspot marker shape is fixed** (a small circular badge with a link icon). Color is customizable per hotspot; rotation is fully supported (drag the Transformer's rotate handle, or use the rotation slider) and persists correctly, but the badge looks the same at any angle — a small yellow dot on the canvas (editor only) marks which way it "faces" so the rotation is visible while editing.
-- **A look's own categories can only be set when it's first created** (in the "Upload a look" form) — there's no way to edit an existing *look's* categories from the editor (individual *product* hotspots can be, though — that's a separate, per-product category picker in the side panel).
 - **Arrow annotations don't support editing their style after creation** — you can change color, thickness, and drag either end to move/resize, but switching straight ↔ curved ↔ spiral means deleting and redrawing.
 - **Text annotations don't support rotation** in the UI yet (the data model has a `rotation` field, unused by the text tool for now).
 

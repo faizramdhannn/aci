@@ -5,6 +5,7 @@ import { getShoppableImageById, listHotspotsForImage, listAnnotationsForImage, l
 import { HotspotEditor } from "@/components/editor/hotspot-editor";
 import { PublishToggle } from "@/components/editor/publish-toggle";
 import { ChangePhoto } from "@/components/editor/change-photo";
+import { LookCategoriesEditor } from "@/components/editor/look-categories-editor";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,11 @@ export default async function EditShoppableImagePage({ params }: { params: Param
           <PublishToggle imageId={image._id} status={image.status} />
         </div>
       </div>
+      <LookCategoriesEditor
+        imageId={image._id}
+        categories={categories.filter((c) => c.isActive)}
+        initialCategoryIds={image.categoryIds}
+      />
       <HotspotEditor
         image={image}
         initialHotspots={hotspots}

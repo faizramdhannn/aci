@@ -25,6 +25,13 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const { deviceType, browser, os } = parseUserAgent(request.headers.get("user-agent"));
   const sessionId = request.cookies.get(SESSION_COOKIE)?.value ?? randomUUID();
 
+  // cx/cy is the real click position (normalized 0-1 on the photo), sent by
+  // the storefront's click handler — used for a true per-pixel heatmap
+  // instead of bucketing every click onto the hotspot's own position.
+  const cx = Number(request.nextUrl.searchParams.get("cx"));
+  const cy = Number(request.nextUrl.searchParams.get("cy"));
+  const hasClickPosition = Number.isFinite(cx) && Number.isFinite(cy) && cx >= 0 && cx <= 1 && cy >= 0 && cy <= 1;
+
   await recordClick({
     hotspotId: hotspot._id,
     shoppableImageId: hotspot.shoppableImageId,
@@ -36,6 +43,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     viewportWidth: 0,
     viewportHeight: 0,
     referrer: request.headers.get("referer") ?? undefined,
+    ...(hasClickPosition ? { clickX: cx, clickY: cy } : {}),
   });
 
   const response = NextResponse.redirect(hotspot.affiliateUrl, { status: 302 });

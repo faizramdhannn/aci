@@ -209,46 +209,91 @@ export async function getHeatmapForImage(imageId: string): Promise<HotspotHeat[]
   }));
 }
 
+/**
+ * Raw normalized click positions for one image, for a true per-pixel
+ * heatmap. Only clicks recorded after click-position tracking shipped have
+ * clickX/clickY — older ones are silently excluded rather than guessed at.
+ */
+export async function listClickPointsForImage(imageId: string): Promise<{ x: number; y: number }[]> {
+  const db = await getDb();
+  const clicks: ClickEvent[] = db
+    ? await db.collection<ClickEvent>("clickEvents").find({ shoppableImageId: imageId }).toArray()
+    : getMemoryStore().clicks.filter((c) => c.shoppableImageId === imageId);
+
+  return clicks
+    .filter((c) => typeof c.clickX === "number" && typeof c.clickY === "number")
+    .map((c) => ({ x: c.clickX!, y: c.clickY! }));
+}
+
 export interface SearchResults {
   images: ShoppableImage[];
 }
 
-/** Case-insensitive search across shoppable image titles/descriptions and their product hotspot titles. */
+function levenshtein(a: string, b: string): number {
+  const dp: number[][] = Array.from({ length: a.length + 1 }, () => new Array(b.length + 1).fill(0));
+  for (let i = 0; i <= a.length; i++) dp[i][0] = i;
+  for (let j = 0; j <= b.length; j++) dp[0][j] = j;
+  for (let i = 1; i <= a.length; i++) {
+    for (let j = 1; j <= b.length; j++) {
+      dp[i][j] =
+        a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j - 1], dp[i - 1][j], dp[i][j - 1]);
+    }
+  }
+  return dp[a.length][b.length];
+}
+
+/**
+ * Scores a candidate string against a lowercased query: exact/prefix/substring
+ * matches rank highest, falling back to a per-word typo tolerance (edit
+ * distance 1-2 depending on word length) so a small misspelling still finds
+ * something. 0 means no match at all.
+ */
+function matchScore(text: string | undefined, q: string): number {
+  if (!text) return 0;
+  const t = text.toLowerCase();
+  if (t === q) return 100;
+  if (t.startsWith(q)) return 85;
+  if (t.includes(q)) return 65;
+
+  let best = 0;
+  for (const word of t.split(/\s+/)) {
+    if (word.length < 3) continue;
+    const tolerance = q.length <= 4 ? 1 : 2;
+    const dist = levenshtein(word, q);
+    if (dist <= tolerance) best = Math.max(best, 50 - dist * 10);
+  }
+  return best;
+}
+
+/**
+ * Ranked, lightly typo-tolerant search across shoppable image titles/
+ * descriptions and their product hotspot titles. Not a real search engine
+ * (no stemming, no synonyms) but good enough at catalog scale: exact and
+ * prefix matches rank first, substring next, then near-misses.
+ */
 export async function searchContent(query: string): Promise<SearchResults> {
   const q = query.trim().toLowerCase();
   if (!q) return { images: [] };
 
-  const db = await getDb();
-  const images = db
-    ? await db
-        .collection<ShoppableImage>("shoppableImages")
-        .find({
-          status: "published",
-          $or: [
-            { title: { $regex: q, $options: "i" } },
-            { description: { $regex: q, $options: "i" } },
-          ],
-        })
-        .toArray()
-    : getMemoryStore().images.filter(
-        (image) =>
-          image.status === "published" &&
-          (image.title.toLowerCase().includes(q) || image.description?.toLowerCase().includes(q))
-      );
+  const [allImages, allHotspots] = await Promise.all([listShoppableImages(), listAllHotspots()]);
+  const published = allImages.filter((i) => i.status === "published");
 
-  const hotspots: Hotspot[] = db
-    ? await db.collection<Hotspot>("hotspots").find({ title: { $regex: q, $options: "i" } }).toArray()
-    : getMemoryStore().hotspots.filter((h) => h.title.toLowerCase().includes(q));
-
-  if (hotspots.length > 0) {
-    const matchedImageIds = new Set(hotspots.map((h) => h.shoppableImageId));
-    const allImages = await listShoppableImages();
-    for (const image of allImages) {
-      if (image.status === "published" && matchedImageIds.has(image._id) && !images.some((i) => i._id === image._id)) {
-        images.push(image);
-      }
+  const scoreByImageId = new Map<string, number>();
+  for (const image of published) {
+    const score = Math.max(matchScore(image.title, q), matchScore(image.description, q) * 0.8);
+    if (score > 0) scoreByImageId.set(image._id, score);
+  }
+  for (const hotspot of allHotspots) {
+    const score = matchScore(hotspot.title, q) * 0.9;
+    if (score > 0) {
+      const current = scoreByImageId.get(hotspot.shoppableImageId) ?? 0;
+      scoreByImageId.set(hotspot.shoppableImageId, Math.max(current, score));
     }
   }
+
+  const images = published
+    .filter((i) => scoreByImageId.has(i._id))
+    .sort((a, b) => scoreByImageId.get(b._id)! - scoreByImageId.get(a._id)!);
 
   return { images };
 }
@@ -261,6 +306,7 @@ export interface AnalyticsSummary {
   clicksByDevice: { device: string; count: number }[];
   clicksOverTime: { date: string; clicks: number; views: number }[];
   topHotspots: { hotspotId: string; title: string; clicks: number }[];
+  topCategories: { categoryId: string; name: string; clicks: number }[];
 }
 
 export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
@@ -317,5 +363,24 @@ export async function getAnalyticsSummary(): Promise<AnalyticsSummary> {
     .sort((a, b) => b.clicks - a.clicks)
     .slice(0, 5);
 
-  return { totalViews, totalClicks, ctr, uniqueSessions, clicksByDevice, clicksOverTime, topHotspots };
+  // A click counts toward every category its product carries (a product can
+  // belong to more than one), so totals across categories can exceed totalClicks.
+  const categories = await listCategories();
+  const clicksPerCategory = new Map<string, number>();
+  for (const click of clicks) {
+    const hotspot = hotspots.find((h) => h._id === click.hotspotId);
+    for (const categoryId of hotspot?.categoryIds ?? []) {
+      clicksPerCategory.set(categoryId, (clicksPerCategory.get(categoryId) ?? 0) + 1);
+    }
+  }
+  const topCategories = Array.from(clicksPerCategory.entries())
+    .map(([categoryId, count]) => ({
+      categoryId,
+      name: categories.find((c) => c._id === categoryId)?.name ?? "Unknown category",
+      clicks: count,
+    }))
+    .sort((a, b) => b.clicks - a.clicks)
+    .slice(0, 5);
+
+  return { totalViews, totalClicks, ctr, uniqueSessions, clicksByDevice, clicksOverTime, topHotspots, topCategories };
 }
