@@ -10,7 +10,16 @@ export default async function AnalyticsPage() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold text-brown">Analytics</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold text-brown">Analytics</h1>
+        <a
+          href="/api/analytics/export"
+          download
+          className="rounded-full border border-brown/20 px-4 py-1.5 text-xs font-medium text-brown-soft transition-colors hover:text-brown"
+        >
+          Export CSV
+        </a>
+      </div>
 
       <div className="mb-8 grid grid-cols-2 gap-4 md:grid-cols-4">
         <Stat label="Total Views" value={summary.totalViews} />

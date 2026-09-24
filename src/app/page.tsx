@@ -11,14 +11,21 @@ import { listAllHotspots, listAnnotationsForImage, listShoppableImages } from "@
 // visitors see stale data until the next deploy.
 export const dynamic = "force-dynamic";
 
+// The homepage is an editorial preview, not the full catalog — capped so it
+// stays fast regardless of how many looks exist. Everything else lives on
+// the paginated /shop page.
+const HOME_GRID_SIZE = 8;
+
 export default async function HomePage() {
   const images = await listShoppableImages();
-  const published = images.filter((i) => i.status === "published");
+  const allPublished = images.filter((i) => i.status === "published");
+  const featured = allPublished.slice(0, HOME_GRID_SIZE);
 
-  const allHotspots = await listAllHotspots();
+  const featuredIds = new Set(featured.map((i) => i._id));
+  const hotspotsForFeatured = (await listAllHotspots()).filter((h) => featuredIds.has(h.shoppableImageId));
   const annotationsByImage = Object.fromEntries(
     await Promise.all(
-      published.map(async (image) => [image._id, await listAnnotationsForImage(image._id)] as const)
+      featured.map(async (image) => [image._id, await listAnnotationsForImage(image._id)] as const)
     )
   );
 
@@ -36,22 +43,29 @@ export default async function HomePage() {
           </p>
         </section>
 
-        {published.length > 0 && (
+        {featured.length > 0 && (
           <section className="mb-12 mt-6 max-w-md">
-            <HeroCarousel images={published} />
+            <HeroCarousel images={featured} />
           </section>
         )}
 
-        {published.length > 0 ? (
+        {featured.length > 0 ? (
           <section>
-            <h2 className="mb-4 text-lg font-semibold text-brown">Your looks</h2>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-brown">Your looks</h2>
+              {allPublished.length > HOME_GRID_SIZE && (
+                <Link href="/shop" className="text-sm font-medium text-orange hover:underline">
+                  See all →
+                </Link>
+              )}
+            </div>
             <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-              {published.map((image) => (
+              {featured.map((image) => (
                 <div key={image._id} className="group relative">
                   <Link href={`/p/${image.slug}`} className="block">
                     <LookPreview
                       image={image}
-                      hotspots={allHotspots.filter((h) => h.shoppableImageId === image._id)}
+                      hotspots={hotspotsForFeatured.filter((h) => h.shoppableImageId === image._id)}
                       annotations={annotationsByImage[image._id]}
                     />
                     <p className="mt-2 text-sm font-medium text-brown">{image.title}</p>
