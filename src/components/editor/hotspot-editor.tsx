@@ -476,6 +476,15 @@ export function HotspotEditor({
                 ref={transformerRef}
                 rotateEnabled
                 enabledAnchors={["top-left", "top-right", "bottom-left", "bottom-right"]}
+                // On a small mobile canvas, a hotspot's own radius can be
+                // tiny — without this gap the resize/rotate handles sit
+                // right on top of (or inside) the marker's own drag hit
+                // area, so a finger aiming to move it easily grabs a handle
+                // instead and resizes/rotates it by accident.
+                padding={16}
+                anchorSize={16}
+                anchorCornerRadius={8}
+                rotateAnchorOffset={36}
               />
             </Layer>
           </Stage>
