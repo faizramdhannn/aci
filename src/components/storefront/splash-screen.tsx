@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { SPLASH_COOKIE } from "@/lib/splash";
 
-const MIN_VISIBLE_MS = 700;
+const MIN_VISIBLE_MS = 1200;
 const MAX_WAIT_MS = 6000;
 const FADE_MS = 450;
 
@@ -92,7 +92,7 @@ export function SplashScreen({ word }: { word: string }) {
       textAnchor="middle"
       dominantBaseline="central"
       fontFamily="Lazydog, var(--font-playfair), Georgia, serif"
-      fontSize="84"
+      fontSize="120"
       {...extra}
     >
       {word}
