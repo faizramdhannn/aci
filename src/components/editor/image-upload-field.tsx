@@ -2,7 +2,9 @@
 
 import { useRef, useState } from "react";
 import NextImage from "next/image";
-import { compressImage } from "@/lib/compress-image";
+import { prepareImage } from "@/lib/compress-image";
+import { ImageCropper } from "@/components/editor/image-cropper";
+import type { CropRect } from "@/lib/crop";
 
 export interface UploadedImage {
   url: string;
@@ -19,12 +21,22 @@ function readImageDimensions(url: string): Promise<{ width: number; height: numb
   });
 }
 
+interface PendingFile {
+  file: File;
+  previewUrl: string;
+  width: number;
+  height: number;
+}
+
 export function ImageUploadField({
   value,
   onChange,
+  defaultRatio = 4 / 5,
 }: {
   value: UploadedImage | null;
   onChange: (image: UploadedImage) => void;
+  /** Aspect ratio the crop step starts on (width/height); null = original. */
+  defaultRatio?: number | null;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -32,6 +44,7 @@ export function ImageUploadField({
   const [dragOver, setDragOver] = useState(false);
   const [importUrl, setImportUrl] = useState("");
   const [importing, setImporting] = useState(false);
+  const [pending, setPending] = useState<PendingFile | null>(null);
 
   async function finishUpload(res: Response) {
     const data = await res.json();
@@ -43,20 +56,49 @@ export function ImageUploadField({
     onChange({ url: data.url, width, height });
   }
 
+  // Picking a file opens the crop step first; the upload happens on confirm.
   async function handleFile(file: File | undefined) {
     if (!file) return;
     setError(null);
+    if (file.type === "image/gif") {
+      await upload(file);
+      return;
+    }
+    const previewUrl = URL.createObjectURL(file);
+    try {
+      const { width, height } = await readImageDimensions(previewUrl);
+      setPending({ file, previewUrl, width, height });
+    } catch {
+      URL.revokeObjectURL(previewUrl);
+      setError("That file doesn't look like an image.");
+    }
+  }
+
+  function closeCropper() {
+    if (pending) URL.revokeObjectURL(pending.previewUrl);
+    setPending(null);
+    if (inputRef.current) inputRef.current.value = "";
+  }
+
+  async function upload(file: File, crop?: CropRect) {
     setLoading(true);
     try {
-      const compressed = await compressImage(file);
+      const prepared = await prepareImage(file, crop);
       const formData = new FormData();
-      formData.append("file", compressed);
+      formData.append("file", prepared);
       await finishUpload(await fetch("/api/uploads", { method: "POST", body: formData }));
     } catch {
       setError("Upload failed. Check your connection and try again.");
     } finally {
       setLoading(false);
     }
+  }
+
+  async function confirmCrop(crop: CropRect) {
+    if (!pending) return;
+    const { file } = pending;
+    await upload(file, crop);
+    closeCropper();
   }
 
   // Not a <form>: this field is rendered inside other forms (e.g. "Upload a
@@ -79,6 +121,21 @@ export function ImageUploadField({
     } finally {
       setImporting(false);
     }
+  }
+
+  if (pending) {
+    return (
+      <ImageCropper
+        src={pending.previewUrl}
+        naturalWidth={pending.width}
+        naturalHeight={pending.height}
+        initialRatio={defaultRatio}
+        confirmLabel="Crop and upload"
+        busy={loading}
+        onCancel={closeCropper}
+        onConfirm={confirmCrop}
+      />
+    );
   }
 
   return (

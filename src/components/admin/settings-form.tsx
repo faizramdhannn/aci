@@ -64,7 +64,7 @@ export function SettingsForm({ initial }: { initial: SiteSettings }) {
       </label>
       <div className="text-sm">
         <span className="mb-1 block text-brown-soft">Profile photo</span>
-        <ImageUploadField value={avatar} onChange={setAvatar} />
+        <ImageUploadField value={avatar} onChange={setAvatar} defaultRatio={1} />
         {avatar && (
           <button type="button" onClick={() => setAvatar(null)} className="mt-1 text-xs text-brown-soft hover:text-orange">
             Remove photo
