@@ -4,9 +4,9 @@ import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import { SPLASH_COOKIE } from "@/lib/splash";
 
-const MIN_VISIBLE_MS = 1200;
-const MAX_WAIT_MS = 6000;
-const FADE_MS = 450;
+const MIN_VISIBLE_MS = 2500;
+const MAX_WAIT_MS = 7000;
+const FADE_MS = 600;
 
 function wavePath(level: number, phase: number) {
   let d = `M 0 ${level}`;
@@ -65,11 +65,11 @@ export function SplashScreen({ word }: { word: string }) {
       const done = (ready && elapsed >= MIN_VISIBLE_MS) || elapsed >= MAX_WAIT_MS;
       if (done && !readyAt) readyAt = now;
 
-      const target = readyAt ? 1 : 0.9 * (1 - Math.exp(-elapsed / 900));
-      shown = reduceMotion ? target : shown + (target - shown) * (readyAt ? 0.14 : 0.08);
+      const target = readyAt ? 1 : 0.9 * (1 - Math.exp(-elapsed / 1500));
+      shown = reduceMotion ? target : shown + (target - shown) * (readyAt ? 0.06 : 0.05);
       waveRef.current?.setAttribute("d", wavePath(132 - shown * 138, elapsed / 260));
 
-      if (readyAt && (shown > 0.995 || reduceMotion) && now - readyAt > 250) {
+      if (readyAt && (shown > 0.995 || reduceMotion) && now - readyAt > 400) {
         finish();
         return;
       }
