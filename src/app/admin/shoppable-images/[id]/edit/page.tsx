@@ -7,6 +7,7 @@ import { PublishToggle } from "@/components/editor/publish-toggle";
 import { ChangePhoto } from "@/components/editor/change-photo";
 import { LookCategoriesEditor } from "@/components/editor/look-categories-editor";
 import { FeaturedToggle } from "@/components/editor/featured-toggle";
+import { ReframePhoto } from "@/components/editor/reframe-photo";
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,12 @@ export default async function EditShoppableImagePage({ params }: { params: Param
             Heatmap
           </Link>
           <ChangePhoto imageId={image._id} />
+          <ReframePhoto
+            imageId={image._id}
+            imageUrl={image.imageUrl}
+            imageWidth={image.imageWidth}
+            imageHeight={image.imageHeight}
+          />
           <FeaturedToggle imageId={image._id} featured={Boolean(image.featured)} />
           <PublishToggle imageId={image._id} status={image.status} />
         </div>
@@ -54,6 +61,8 @@ export default async function EditShoppableImagePage({ params }: { params: Param
         initialCategoryIds={image.categoryIds}
       />
       <HotspotEditor
+        // Remount when the photo changes (replace/crop) so local marker state reloads from the server.
+        key={image.imageUrl}
         image={image}
         initialHotspots={hotspots}
         initialAnnotations={annotations}

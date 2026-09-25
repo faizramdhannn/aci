@@ -4,6 +4,7 @@ import type { Annotation, Category, ClickEvent, Hotspot, ShoppableImage, SiteSet
 import { randomUUID } from "crypto";
 import type { Filter } from "mongodb";
 import { paginate, type Paginated } from "@/lib/pagination";
+import { remapPoint, type CropRect } from "@/lib/crop";
 
 /**
  * Thin data-access layer: reads/writes Mongo when MONGODB_URI is configured
@@ -677,4 +678,59 @@ export async function updateSiteSettings(patch: Partial<SiteSettings>): Promise<
   await db
     .collection<SiteSettings & { _id: string }>("settings")
     .updateOne({ _id: "site" }, { $set: patch }, { upsert: true });
+}
+
+/**
+ * Swaps a look's photo for a cropped version of itself and moves every
+ * hotspot and annotation into the cropped frame's coordinate space, so they
+ * stay on the same spot of the photo. Anything that ends up outside the new
+ * frame is clamped to its edge; the count is returned so the admin can be told.
+ */
+export async function reframeShoppableImage(
+  id: string,
+  crop: CropRect,
+  replacement: { imageUrl: string; imageWidth: number; imageHeight: number }
+): Promise<{ outside: number }> {
+  const [hotspots, annotations] = await Promise.all([listHotspotsForImage(id), listAnnotationsForImage(id)]);
+  const now = new Date().toISOString();
+  let outside = 0;
+
+  const move = (x: number, y: number) => {
+    const p = remapPoint(x, y, crop);
+    if (p.x < 0 || p.x > 1 || p.y < 0 || p.y > 1) outside++;
+    return { x: Math.min(1, Math.max(0, p.x)), y: Math.min(1, Math.max(0, p.y)) };
+  };
+
+  await updateShoppableImage(id, replacement);
+  await Promise.all([
+    ...hotspots.map((h) =>
+      upsertHotspot({
+        ...h,
+        ...move(h.x, h.y),
+        width: Math.min(1, h.width / crop.width),
+        height: Math.min(1, h.height / crop.height),
+        updatedAt: now,
+      })
+    ),
+    ...annotations.map((a) => {
+      if (a.kind === "arrow") {
+        const start = remapPoint(a.x1!, a.y1!, crop);
+        const end = remapPoint(a.x2!, a.y2!, crop);
+        const clamp = (v: number) => Math.min(1, Math.max(0, v));
+        if ([start.x, start.y, end.x, end.y].some((v) => v < 0 || v > 1)) outside++;
+        return upsertAnnotation({
+          ...a,
+          x1: clamp(start.x),
+          y1: clamp(start.y),
+          x2: clamp(end.x),
+          y2: clamp(end.y),
+          strokeWidth: a.strokeWidth! / crop.width,
+          updatedAt: now,
+        });
+      }
+      return upsertAnnotation({ ...a, ...move(a.x!, a.y!), fontSize: a.fontSize! / crop.width, updatedAt: now });
+    }),
+  ]);
+
+  return { outside };
 }
