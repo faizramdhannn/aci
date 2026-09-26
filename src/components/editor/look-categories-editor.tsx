@@ -5,6 +5,7 @@ import { useState } from "react";
 import type { Category } from "@/types";
 import { CategoryChipPicker } from "@/components/admin/category-chip-picker";
 import { useToast } from "@/components/ui/toast-provider";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
 
 export function LookCategoriesEditor({
   imageId,
@@ -17,6 +18,7 @@ export function LookCategoriesEditor({
 }) {
   const router = useRouter();
   const toast = useToast();
+  const t = useAdminDictionary();
   const [categoryIds, setCategoryIds] = useState(initialCategoryIds);
   const [saving, setSaving] = useState(false);
 
@@ -38,7 +40,7 @@ export function LookCategoriesEditor({
 
     if (!res.ok) {
       setCategoryIds(previous);
-      toast("Couldn't update categories.", "error");
+      toast(t.editor.categoriesFailed, "error");
       return;
     }
     router.refresh();
@@ -47,7 +49,7 @@ export function LookCategoriesEditor({
   return (
     <div className="mb-6">
       <p className="mb-2 text-xs font-medium uppercase tracking-wide text-brown-soft">
-        Look categories {saving && <span className="normal-case">· saving…</span>}
+        {t.editor.lookCategories} {saving && <span className="normal-case">· {t.common.saving}</span>}
       </p>
       <CategoryChipPicker categories={categories} selectedIds={categoryIds} onToggle={toggle} />
     </div>

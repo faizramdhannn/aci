@@ -11,6 +11,20 @@ import { MongoClient, type Db } from "mongodb";
 
 config({ path: ".env.local" });
 
+const retentionDays = Number(process.env.ANALYTICS_RETENTION_DAYS) || 365;
+
+/** Old view/click events expire automatically after ANALYTICS_RETENTION_DAYS (default 365). */
+async function ensureTtlIndex(db: Db, collection: string) {
+  const expireAfterSeconds = retentionDays * 24 * 60 * 60;
+  try {
+    await db.collection(collection).createIndex({ ts: 1 }, { name: "ts_ttl", expireAfterSeconds });
+  } catch (error) {
+    // Already exists with a different retention — update it in place.
+    if ((error as { codeName?: string }).codeName !== "IndexOptionsConflict") throw error;
+    await db.command({ collMod: collection, index: { name: "ts_ttl", expireAfterSeconds } });
+  }
+}
+
 export async function ensureIndexes(db: Db) {
   const dupes = await db
     .collection("shoppableImages")
@@ -21,6 +35,15 @@ export async function ensureIndexes(db: Db) {
       `Can't create the unique slug index: duplicate slugs exist (${dupes.map((d) => d._id).join(", ")}). ` +
         "Rename one of each pair in the admin first."
     );
+  }
+
+  // Backfill ts (BSON Date) on events recorded before it existed, so the TTL
+  // index below can expire them too. Idempotent: only touches docs without ts.
+  for (const name of ["viewEvents", "clickEvents"]) {
+    await db
+      .collection(name)
+      .updateMany({ ts: { $exists: false } }, [{ $set: { ts: { $toDate: "$createdAt" } } }]);
+    await ensureTtlIndex(db, name);
   }
 
   await Promise.all([
@@ -48,7 +71,7 @@ async function main() {
   await client.connect();
   try {
     await ensureIndexes(client.db(process.env.MONGODB_DB_NAME || "aci"));
-    console.log("Indexes are up to date.");
+    console.log(`Indexes are up to date. Analytics events expire after ${retentionDays} days.`);
   } finally {
     await client.close();
   }

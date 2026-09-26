@@ -5,6 +5,7 @@ import { randomUUID } from "crypto";
 import type { Filter } from "mongodb";
 import { paginate, type Paginated } from "@/lib/pagination";
 import { remapPoint, type CropRect } from "@/lib/crop";
+import { deleteStoredImage } from "@/lib/storage";
 
 /**
  * Thin data-access layer: reads/writes Mongo when MONGODB_URI is configured
@@ -261,6 +262,12 @@ export async function updateShoppableImage(
 
 /** Deletes a look and cascades to its own hotspots/annotations. View/click history is left as-is (historical record). */
 export async function deleteShoppableImage(id: string): Promise<void> {
+  const image = await getShoppableImageById(id);
+  await removeShoppableImageRecords(id);
+  await deleteImageIfUnused(image?.imageUrl);
+}
+
+async function removeShoppableImageRecords(id: string): Promise<void> {
   const db = await getDb();
   if (!db) {
     const store = getMemoryStore();
@@ -347,7 +354,8 @@ export async function deleteCategory(id: string): Promise<void> {
 }
 
 export async function recordView(event: Omit<ViewEvent, "_id" | "createdAt">): Promise<void> {
-  const full: ViewEvent = { ...event, _id: randomUUID(), createdAt: new Date().toISOString() };
+  const now = new Date();
+  const full: ViewEvent = { ...event, _id: randomUUID(), createdAt: now.toISOString(), ts: now };
   const db = await getDb();
   if (!db) {
     getMemoryStore().views.push(full);
@@ -357,7 +365,8 @@ export async function recordView(event: Omit<ViewEvent, "_id" | "createdAt">): P
 }
 
 export async function recordClick(event: Omit<ClickEvent, "_id" | "createdAt">): Promise<void> {
-  const full: ClickEvent = { ...event, _id: randomUUID(), createdAt: new Date().toISOString() };
+  const now = new Date();
+  const full: ClickEvent = { ...event, _id: randomUUID(), createdAt: now.toISOString(), ts: now };
   const db = await getDb();
   if (!db) {
     getMemoryStore().clicks.push(full);
@@ -691,7 +700,11 @@ export async function reframeShoppableImage(
   crop: CropRect,
   replacement: { imageUrl: string; imageWidth: number; imageHeight: number }
 ): Promise<{ outside: number }> {
-  const [hotspots, annotations] = await Promise.all([listHotspotsForImage(id), listAnnotationsForImage(id)]);
+  const [previous, hotspots, annotations] = await Promise.all([
+    getShoppableImageById(id),
+    listHotspotsForImage(id),
+    listAnnotationsForImage(id),
+  ]);
   const now = new Date().toISOString();
   let outside = 0;
 
@@ -731,6 +744,23 @@ export async function reframeShoppableImage(
       return upsertAnnotation({ ...a, ...move(a.x!, a.y!), fontSize: a.fontSize! / crop.width, updatedAt: now });
     }),
   ]);
+  await deleteImageIfUnused(previous?.imageUrl);
 
   return { outside };
+}
+
+/**
+ * Deletes an uploaded photo once nothing references it any more. Duplicated
+ * looks share their original's file, and the profile photo lives in
+ * settings, so a file is only removed when no look and no avatar uses it.
+ */
+export async function deleteImageIfUnused(url: string | undefined): Promise<void> {
+  if (!url) return;
+  const db = await getDb();
+  const inUse = db
+    ? (await db.collection<ShoppableImage>("shoppableImages").countDocuments({ imageUrl: url }, { limit: 1 })) > 0
+    : getMemoryStore().images.some((i) => i.imageUrl === url);
+  if (inUse) return;
+  if ((await getSiteSettings()).avatarUrl === url) return;
+  await deleteStoredImage(url);
 }

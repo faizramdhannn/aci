@@ -9,3 +9,8 @@ export async function getLocale(): Promise<Locale> {
 export async function getDictionary() {
   return dictionaries[await getLocale()];
 }
+
+export async function getAdminDictionary() {
+  const { adminDictionaries } = await import("@/lib/i18n/admin-dictionaries");
+  return adminDictionaries[await getLocale()];
+}

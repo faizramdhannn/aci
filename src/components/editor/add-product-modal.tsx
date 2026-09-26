@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Category, Hotspot } from "@/types";
 import { CategoryChipPicker } from "@/components/admin/category-chip-picker";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
 
 const MARKER_COLORS = ["#5A3D2B", "#E5781E", "#FBBA00", "#2B1E17"];
 
@@ -17,6 +18,7 @@ export function AddProductModal({
   onCreated: (hotspot: Hotspot) => void;
   onClose: () => void;
 }) {
+  const t = useAdminDictionary();
   const [title, setTitle] = useState("");
   const [affiliateUrl, setAffiliateUrl] = useState("");
   const [price, setPrice] = useState("");
@@ -54,7 +56,7 @@ export function AddProductModal({
     setLoading(false);
 
     if (!res.ok) {
-      setError("Check the affiliate URL and try again.");
+      setError(t.addProduct.failed);
       return;
     }
 
@@ -63,21 +65,21 @@ export function AddProductModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <button aria-label="Close" onClick={onClose} className="absolute inset-0 bg-brown/40 backdrop-blur-sm" />
+      <button aria-label={t.common.close} onClick={onClose} className="absolute inset-0 bg-brown/40 backdrop-blur-sm" />
 
       <form
         onSubmit={onSubmit}
         className="relative w-full max-w-sm space-y-3 rounded-2xl border border-brown/10 bg-cream p-5 shadow-xl"
       >
         <div className="flex items-center justify-between">
-          <p className="font-semibold text-brown">Add a product</p>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-brown-soft hover:text-brown">
+          <p className="font-semibold text-brown">{t.addProduct.title}</p>
+          <button type="button" onClick={onClose} aria-label={t.common.close} className="text-brown-soft hover:text-brown">
             ✕
           </button>
         </div>
 
         <label className="block">
-          <span className="mb-1 block text-xs text-brown-soft">Product name</span>
+          <span className="mb-1 block text-xs text-brown-soft">{t.editor.productName}</span>
           <input
             required
             autoFocus
@@ -87,7 +89,7 @@ export function AddProductModal({
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-brown-soft">Affiliate URL</span>
+          <span className="mb-1 block text-xs text-brown-soft">{t.editor.affiliateUrl}</span>
           <input
             required
             type="url"
@@ -98,7 +100,7 @@ export function AddProductModal({
           />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-brown-soft">Price (optional, IDR)</span>
+          <span className="mb-1 block text-xs text-brown-soft">{t.editor.price}</span>
           <input
             type="number"
             value={price}
@@ -108,7 +110,7 @@ export function AddProductModal({
         </label>
 
         <div>
-          <span className="mb-1 block text-xs text-brown-soft">Marker color</span>
+          <span className="mb-1 block text-xs text-brown-soft">{t.editor.markerColor}</span>
           <div className="flex items-center gap-1.5">
             {MARKER_COLORS.map((c) => (
               <button
@@ -125,14 +127,14 @@ export function AddProductModal({
               value={color}
               onChange={(e) => setColor(e.target.value)}
               className="h-6 w-6 cursor-pointer rounded-full border border-brown/20 bg-transparent p-0"
-              aria-label="Custom color"
+              aria-label={t.common.customColor}
             />
           </div>
         </div>
 
         {categories.length > 0 && (
           <div>
-            <span className="mb-1 block text-xs text-brown-soft">Categories (optional)</span>
+            <span className="mb-1 block text-xs text-brown-soft">{t.common.categoriesOptional}</span>
             <CategoryChipPicker categories={categories} selectedIds={categoryIds} onToggle={toggleCategory} />
           </div>
         )}
@@ -144,9 +146,9 @@ export function AddProductModal({
           disabled={loading}
           className="w-full rounded-full bg-orange px-3 py-2 text-xs font-semibold text-cream transition-opacity hover:opacity-90 disabled:opacity-60"
         >
-          {loading ? "Adding…" : "Add to photo"}
+          {loading ? t.addProduct.adding : t.addProduct.submit}
         </button>
-        <p className="text-[11px] text-brown-soft">It&apos;ll drop in the middle — drag it onto the right spot after.</p>
+        <p className="text-[11px] text-brown-soft">{t.addProduct.hint}</p>
       </form>
     </div>
   );

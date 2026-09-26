@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ImageUploadField, type UploadedImage } from "@/components/editor/image-upload-field";
 import { useToast } from "@/components/ui/toast-provider";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
 
 export function ChangePhoto({ imageId }: { imageId: string }) {
   const router = useRouter();
   const toast = useToast();
+  const t = useAdminDictionary();
   const [open, setOpen] = useState(false);
   const [uploaded, setUploaded] = useState<UploadedImage | null>(null);
   const [saving, setSaving] = useState(false);
@@ -18,7 +20,7 @@ export function ChangePhoto({ imageId }: { imageId: string }) {
         onClick={() => setOpen(true)}
         className="rounded-full border border-brown/20 px-4 py-1.5 text-xs font-medium text-brown-soft transition-colors hover:text-brown"
       >
-        Change photo
+        {t.editor.changePhoto}
       </button>
     );
   }
@@ -34,10 +36,10 @@ export function ChangePhoto({ imageId }: { imageId: string }) {
     setSaving(false);
 
     if (!res.ok) {
-      toast("Couldn't save the new photo.", "error");
+      toast(t.editor.photoFailed, "error");
       return;
     }
-    toast("Photo replaced.");
+    toast(t.editor.photoReplaced);
     setOpen(false);
     setUploaded(null);
     router.refresh();
@@ -46,17 +48,14 @@ export function ChangePhoto({ imageId }: { imageId: string }) {
   return (
     <div className="rounded-xl border border-brown/10 bg-surface/70 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <p className="text-sm font-semibold text-brown">Replace this photo</p>
+        <p className="text-sm font-semibold text-brown">{t.editor.replaceTitle}</p>
         <button onClick={() => setOpen(false)} className="text-xs text-brown-soft hover:text-brown">
-          Cancel
+          {t.common.cancel}
         </button>
       </div>
-      <p className="mb-3 text-xs text-brown-soft">
-        Existing hotspot positions stay the same (they&apos;re normalized), but re-check them against the new photo
-        after replacing it.
-      </p>
+      <p className="mb-3 text-xs text-brown-soft">{t.editor.replaceNote}</p>
       <ImageUploadField value={uploaded} onChange={onUpload} />
-      {saving && <p className="mt-2 text-xs text-brown-soft">Saving…</p>}
+      {saving && <p className="mt-2 text-xs text-brown-soft">{t.common.saving}</p>}
     </div>
   );
 }

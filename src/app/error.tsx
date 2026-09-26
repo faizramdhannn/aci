@@ -17,8 +17,8 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
   return (
     <>
       <header className="px-6 pt-6">
-        <Link href="/" className="font-display text-2xl text-brown">
-          Aci
+        <Link href="/" className="text-sm font-medium text-brown-soft hover:text-brown">
+          ← {t.nav.home}
         </Link>
       </header>
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-6 py-24 text-center">

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import NextImage from "next/image";
 import { prepareImage } from "@/lib/compress-image";
 import { ImageCropper } from "@/components/editor/image-cropper";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
 import type { CropRect } from "@/lib/crop";
 
 export interface UploadedImage {
@@ -38,6 +39,7 @@ export function ImageUploadField({
   /** Aspect ratio the crop step starts on (width/height); null = original. */
   defaultRatio?: number | null;
 }) {
+  const t = useAdminDictionary();
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +51,7 @@ export function ImageUploadField({
   async function finishUpload(res: Response) {
     const data = await res.json();
     if (!res.ok) {
-      setError(data.error || "Upload failed.");
+      setError(data.error || t.upload.failed);
       return;
     }
     const { width, height } = await readImageDimensions(data.url);
@@ -70,7 +72,7 @@ export function ImageUploadField({
       setPending({ file, previewUrl, width, height });
     } catch {
       URL.revokeObjectURL(previewUrl);
-      setError("That file doesn't look like an image.");
+      setError(t.upload.notImage);
     }
   }
 
@@ -88,7 +90,7 @@ export function ImageUploadField({
       formData.append("file", prepared);
       await finishUpload(await fetch("/api/uploads", { method: "POST", body: formData }));
     } catch {
-      setError("Upload failed. Check your connection and try again.");
+      setError(t.upload.failed);
     } finally {
       setLoading(false);
     }
@@ -117,7 +119,7 @@ export function ImageUploadField({
       );
       setImportUrl("");
     } catch {
-      setError("Import failed. Check your connection and try again.");
+      setError(t.upload.importFailed);
     } finally {
       setImporting(false);
     }
@@ -130,7 +132,7 @@ export function ImageUploadField({
         naturalWidth={pending.width}
         naturalHeight={pending.height}
         initialRatio={defaultRatio}
-        confirmLabel="Crop and upload"
+        confirmLabel={t.cropper.cropUpload}
         busy={loading}
         onCancel={closeCropper}
         onConfirm={confirmCrop}
@@ -167,9 +169,9 @@ export function ImageUploadField({
         ) : (
           <>
             <span className="text-sm font-medium text-brown">
-              {loading ? "Uploading…" : "Drop a photo here, or click to choose one"}
+              {loading ? t.upload.uploading : t.upload.drop}
             </span>
-            <span className="text-xs text-brown-soft">JPEG, PNG, WEBP, or GIF — up to 8MB</span>
+            <span className="text-xs text-brown-soft">{t.upload.types}</span>
           </>
         )}
         <input
@@ -186,7 +188,7 @@ export function ImageUploadField({
           onClick={() => inputRef.current?.click()}
           className="mt-2 text-xs font-medium text-orange hover:underline"
         >
-          Choose a different photo
+          {t.upload.chooseDifferent}
         </button>
       )}
       {error && <p className="mt-2 text-xs text-orange">{error}</p>}
@@ -202,7 +204,7 @@ export function ImageUploadField({
               handleImportUrl();
             }
           }}
-          placeholder="Or paste an Instagram/TikTok post link…"
+          placeholder={t.upload.importPlaceholder}
           className="w-full min-w-0 flex-1 rounded-lg border border-brown/20 bg-cream px-3 py-2 text-xs outline-none focus:border-orange"
         />
         <button
@@ -211,7 +213,7 @@ export function ImageUploadField({
           disabled={importing || !importUrl.trim()}
           className="shrink-0 rounded-lg border border-brown/20 px-3 py-2 text-xs font-medium text-brown-soft transition-colors hover:text-brown disabled:opacity-50"
         >
-          {importing ? "Importing…" : "Import"}
+          {importing ? t.upload.importing : t.upload.import}
         </button>
       </div>
     </div>

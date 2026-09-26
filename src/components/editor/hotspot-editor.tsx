@@ -10,6 +10,8 @@ import { buildArrowPoints, toFlatPoints } from "@/lib/arrow-shapes";
 import { AddProductModal } from "@/components/editor/add-product-modal";
 import { CategoryChipPicker } from "@/components/admin/category-chip-picker";
 import { fontFamilyFor } from "@/lib/fonts";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
+import { format } from "@/lib/i18n/dictionaries";
 
 const MAX_CANVAS_WIDTH = 480;
 const MIN_CANVAS_WIDTH = 220;
@@ -31,6 +33,7 @@ export function HotspotEditor({
   initialAnnotations: Annotation[];
   categories: Category[];
 }) {
+  const t = useAdminDictionary();
   const [hotspots, setHotspots] = useState(initialHotspots);
   const [annotations, setAnnotations] = useState(initialAnnotations);
   const [selected, setSelected] = useState<Selection>(null);
@@ -223,7 +226,7 @@ export function HotspotEditor({
       body: JSON.stringify({
         kind: "text",
         shoppableImageId: image._id,
-        text: "Text",
+        text: t.editor.newText,
         fontFamily: textFont,
         fontSize: 24 / canvasWidth,
         color: textColor,
@@ -246,23 +249,18 @@ export function HotspotEditor({
     <div className="grid gap-6 md:grid-cols-[minmax(0,480px)_260px]">
       <div className="min-w-0">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <ToolButton active={tool === "select"} label="Select" onClick={() => setTool("select")} />
-          <ToolButton active={tool === "add-product"} label="Add Product" onClick={() => setTool("add-product")} />
-          <ToolButton active={tool === "add-arrow"} label="Add Arrow" onClick={() => setTool("add-arrow")} />
-          <ToolButton active={tool === "add-text"} label="Add Text" onClick={() => setTool("add-text")} />
+          <ToolButton active={tool === "select"} label={t.editor.tools.select} onClick={() => setTool("select")} />
+          <ToolButton active={tool === "add-product"} label={t.editor.tools.addProduct} onClick={() => setTool("add-product")} />
+          <ToolButton active={tool === "add-arrow"} label={t.editor.tools.addArrow} onClick={() => setTool("add-arrow")} />
+          <ToolButton active={tool === "add-text"} label={t.editor.tools.addText} onClick={() => setTool("add-text")} />
           <button
             onClick={deleteSelected}
             disabled={!selected}
             className="rounded-full border border-brown/20 px-3 py-1.5 text-xs font-medium text-brown-soft transition-colors hover:text-orange disabled:opacity-40"
           >
-            Delete
+            {t.common.delete}
           </button>
-          <span className="ml-auto text-xs text-brown-soft">
-            {saveState === "saved" && "Saved"}
-            {saveState === "saving" && "Saving…"}
-            {saveState === "unsaved" && "Unsaved changes"}
-            {saveState === "error" && "Couldn't save"}
-          </span>
+          <span className="ml-auto text-xs text-brown-soft">{t.editor.state[saveState]}</span>
         </div>
 
         {tool === "add-arrow" && (
@@ -491,12 +489,8 @@ export function HotspotEditor({
           </Stage>
         </div>
         <p className="mt-2 text-xs text-brown-soft">
-          Scale: {(scale * 100).toFixed(0)}% of source ({image.imageWidth}×{image.imageHeight}px).{" "}
-          {tool === "add-arrow"
-            ? "Click and drag on the photo to draw an arrow."
-            : tool === "add-text"
-              ? "Click on the photo to drop a text label."
-              : "Drag a dot to move it, corner handles to resize, the top handle to rotate."}
+          {format(t.editor.scale, { pct: (scale * 100).toFixed(0), w: image.imageWidth, h: image.imageHeight })}{" "}
+          {tool === "add-arrow" ? t.editor.hintArrow : tool === "add-text" ? t.editor.hintText : t.editor.hintSelect}
         </p>
       </div>
 
@@ -533,9 +527,7 @@ export function HotspotEditor({
             onSize={(px) => updateAnnotation(selected.id, { fontSize: px / canvasWidth })}
           />
         ) : (
-          <p className="text-sm text-brown-soft">
-            Select a hotspot, arrow, or text label to see its details — or add a new one.
-          </p>
+          <p className="text-sm text-brown-soft">{t.editor.empty}</p>
         )}
       </div>
 
@@ -569,6 +561,7 @@ function ToolButton({ label, active, onClick }: { label: string; active: boolean
 }
 
 function ColorSwatches({ value, onChange }: { value: string; onChange: (color: string) => void }) {
+  const t = useAdminDictionary();
   return (
     <div className="flex items-center gap-1.5">
       {ARROW_COLORS.map((c) => (
@@ -586,7 +579,7 @@ function ColorSwatches({ value, onChange }: { value: string; onChange: (color: s
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="h-6 w-6 cursor-pointer rounded-full border border-brown/20 bg-transparent p-0"
-        aria-label="Custom color"
+        aria-label={t.common.customColor}
       />
     </div>
   );
@@ -607,30 +600,27 @@ function ArrowToolbar({
   width: number;
   onWidth: (w: number) => void;
 }) {
-  const styles: { value: ArrowStyle; label: string }[] = [
-    { value: "straight", label: "Straight" },
-    { value: "curved", label: "Curved" },
-    { value: "spiral", label: "Spiral" },
-  ];
+  const t = useAdminDictionary();
+  const styles: ArrowStyle[] = ["straight", "curved", "spiral"];
 
   return (
     <div className="mb-3 flex flex-wrap items-center gap-4 rounded-xl border border-brown/10 bg-surface/70 p-3">
       <div className="flex items-center gap-1">
         {styles.map((s) => (
           <button
-            key={s.value}
-            onClick={() => onStyle(s.value)}
+            key={s}
+            onClick={() => onStyle(s)}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              style === s.value ? "bg-brown text-cream" : "border border-brown/20 text-brown-soft hover:text-brown"
+              style === s ? "bg-brown text-cream" : "border border-brown/20 text-brown-soft hover:text-brown"
             }`}
           >
-            {s.label}
+            {t.editor.arrowStyles[s]}
           </button>
         ))}
       </div>
       <ColorSwatches value={color} onChange={onColor} />
       <label className="flex items-center gap-2 text-xs text-brown-soft">
-        Size
+        {t.common.size}
         <input
           type="range"
           min={2}
@@ -691,11 +681,12 @@ function SelectedHotspotDetails({
   onEdit: (patch: Partial<Hotspot>) => void;
   onToggleCategory: (categoryId: string) => void;
 }) {
+  const t = useAdminDictionary();
   if (!hotspot) return null;
   return (
     <div className="rounded-xl border border-brown/10 bg-surface/70 p-4 text-sm">
       <label className="block">
-        <span className="mb-1 block text-xs text-brown-soft">Product name</span>
+        <span className="mb-1 block text-xs text-brown-soft">{t.editor.productName}</span>
         <input
           value={hotspot.title}
           onChange={(e) => onEdit({ title: e.target.value })}
@@ -704,7 +695,7 @@ function SelectedHotspotDetails({
       </label>
 
       <label className="mt-3 block">
-        <span className="mb-1 block text-xs text-brown-soft">Affiliate URL</span>
+        <span className="mb-1 block text-xs text-brown-soft">{t.editor.affiliateUrl}</span>
         <input
           value={hotspot.affiliateUrl}
           onChange={(e) => onEdit({ affiliateUrl: e.target.value })}
@@ -713,7 +704,7 @@ function SelectedHotspotDetails({
       </label>
 
       <label className="mt-3 block">
-        <span className="mb-1 block text-xs text-brown-soft">Price (optional, IDR)</span>
+        <span className="mb-1 block text-xs text-brown-soft">{t.editor.price}</span>
         <input
           type="number"
           value={hotspot.productPrice ?? ""}
@@ -723,20 +714,20 @@ function SelectedHotspotDetails({
       </label>
 
       <div className="mt-4">
-        <span className="mb-1 block text-xs text-brown-soft">Marker color</span>
+        <span className="mb-1 block text-xs text-brown-soft">{t.editor.markerColor}</span>
         <ColorSwatches value={hotspot.color} onChange={(color) => onEdit({ color })} />
       </div>
 
       {categories.length > 0 && (
         <div className="mt-4">
-          <span className="mb-1 block text-xs text-brown-soft">Categories</span>
+          <span className="mb-1 block text-xs text-brown-soft">{t.common.categories}</span>
           <CategoryChipPicker categories={categories} selectedIds={hotspot.categoryIds} onToggle={onToggleCategory} />
         </div>
       )}
 
       <label className="mt-4 block">
         <span className="mb-1 flex items-center justify-between text-xs text-brown-soft">
-          <span>Rotation</span>
+          <span>{t.editor.rotation}</span>
           <span>{Math.round(hotspot.rotation)}°</span>
         </span>
         <input
@@ -748,9 +739,7 @@ function SelectedHotspotDetails({
           className="w-full accent-orange"
         />
       </label>
-      <p className="mt-1 text-[11px] text-brown-soft">
-        Or drag the handle above the hotspot on the canvas to rotate it by hand.
-      </p>
+      <p className="mt-1 text-[11px] text-brown-soft">{t.editor.rotateHint}</p>
     </div>
   );
 }
@@ -766,19 +755,22 @@ function SelectedArrowDetails({
   onColor: (color: string) => void;
   onWidth: (px: number) => void;
 }) {
+  const t = useAdminDictionary();
   if (!annotation) return null;
   return (
     <div className="rounded-xl border border-brown/10 bg-surface/70 p-4 text-sm">
-      <p className="font-semibold capitalize text-brown">{annotation.style} arrow</p>
-      <p className="mt-1 text-xs text-brown-soft">Drag either end to move or resize it.</p>
+      <p className="font-semibold text-brown">
+        {format(t.editor.arrowTitle, { style: t.editor.arrowStyles[annotation.style ?? "straight"] })}
+      </p>
+      <p className="mt-1 text-xs text-brown-soft">{t.editor.arrowHint}</p>
 
       <div className="mt-4">
-        <span className="mb-1 block text-xs text-brown-soft">Color</span>
+        <span className="mb-1 block text-xs text-brown-soft">{t.common.color}</span>
         <ColorSwatches value={annotation.color} onChange={onColor} />
       </div>
 
       <label className="mt-4 block">
-        <span className="mb-1 block text-xs text-brown-soft">Thickness</span>
+        <span className="mb-1 block text-xs text-brown-soft">{t.editor.thickness}</span>
         <input
           type="range"
           min={2}
@@ -807,11 +799,12 @@ function SelectedTextDetails({
   onColor: (color: string) => void;
   onSize: (px: number) => void;
 }) {
+  const t = useAdminDictionary();
   if (!annotation) return null;
   return (
     <div className="rounded-xl border border-brown/10 bg-surface/70 p-4 text-sm">
       <label className="block">
-        <span className="mb-1 block text-xs text-brown-soft">Text</span>
+        <span className="mb-1 block text-xs text-brown-soft">{t.editor.text}</span>
         <input
           value={annotation.text}
           onChange={(e) => onText(e.target.value)}
@@ -821,17 +814,17 @@ function SelectedTextDetails({
       </label>
 
       <div className="mt-4">
-        <span className="mb-1 block text-xs text-brown-soft">Font</span>
+        <span className="mb-1 block text-xs text-brown-soft">{t.editor.font}</span>
         <FontSelect value={annotation.fontFamily!} onChange={onFont} />
       </div>
 
       <div className="mt-4">
-        <span className="mb-1 block text-xs text-brown-soft">Color</span>
+        <span className="mb-1 block text-xs text-brown-soft">{t.common.color}</span>
         <ColorSwatches value={annotation.color} onChange={onColor} />
       </div>
 
       <label className="mt-4 block">
-        <span className="mb-1 block text-xs text-brown-soft">Size</span>
+        <span className="mb-1 block text-xs text-brown-soft">{t.common.size}</span>
         <input
           type="range"
           min={12}
@@ -841,7 +834,7 @@ function SelectedTextDetails({
           className="w-full accent-orange"
         />
       </label>
-      <p className="mt-1 text-[11px] text-brown-soft">Drag the text on the canvas to reposition it.</p>
+      <p className="mt-1 text-[11px] text-brown-soft">{t.editor.textHint}</p>
     </div>
   );
 }

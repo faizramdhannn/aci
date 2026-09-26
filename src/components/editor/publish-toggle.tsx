@@ -3,10 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "@/components/ui/toast-provider";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
 
 export function PublishToggle({ imageId, status }: { imageId: string; status: "draft" | "published" }) {
   const router = useRouter();
   const toast = useToast();
+  const t = useAdminDictionary();
   const [loading, setLoading] = useState(false);
   const isPublished = status === "published";
 
@@ -21,10 +23,10 @@ export function PublishToggle({ imageId, status }: { imageId: string; status: "d
     setLoading(false);
 
     if (!res.ok) {
-      toast("Couldn't update the publish status.", "error");
+      toast(t.editor.publishFailed, "error");
       return;
     }
-    toast(nextStatus === "published" ? "Published." : "Moved back to draft.");
+    toast(nextStatus === "published" ? t.editor.publishedToast : t.editor.draftToast);
     router.refresh();
   }
 
@@ -36,7 +38,7 @@ export function PublishToggle({ imageId, status }: { imageId: string; status: "d
         isPublished ? "bg-brown text-cream" : "bg-orange text-cream"
       }`}
     >
-      {loading ? "…" : isPublished ? "Published · unpublish" : "Publish"}
+      {loading ? "…" : isPublished ? t.editor.unpublish : t.editor.publish}
     </button>
   );
 }

@@ -4,9 +4,11 @@ import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { Logo } from "@/components/navigation/logo";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
 
-export function LoginForm() {
+export function LoginForm({ studio }: { studio: string }) {
   const router = useRouter();
+  const t = useAdminDictionary();
   const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -27,7 +29,7 @@ export function LoginForm() {
     setLoading(false);
 
     if (result?.error) {
-      setError("Email or password doesn't match.");
+      setError(t.login.failed);
       return;
     }
 
@@ -39,12 +41,12 @@ export function LoginForm() {
     <form onSubmit={onSubmit} className="w-full max-w-sm rounded-2xl border border-brown/10 bg-surface/70 p-6">
       <p className="mb-1 flex items-center gap-2 font-display text-2xl text-orange">
         <Logo size={28} />
-        Aci Studio
+        {studio}
       </p>
-      <h1 className="mb-6 text-lg font-semibold text-brown">Sign in to manage your looks</h1>
+      <h1 className="mb-6 text-lg font-semibold text-brown">{t.login.title}</h1>
 
       <label className="mb-3 block text-sm">
-        <span className="mb-1 block text-brown-soft">Email</span>
+        <span className="mb-1 block text-brown-soft">{t.login.email}</span>
         <input
           type="email"
           required
@@ -55,7 +57,7 @@ export function LoginForm() {
       </label>
 
       <label className="mb-4 block text-sm">
-        <span className="mb-1 block text-brown-soft">Password</span>
+        <span className="mb-1 block text-brown-soft">{t.login.password}</span>
         <input
           type="password"
           required
@@ -72,7 +74,7 @@ export function LoginForm() {
         disabled={loading}
         className="w-full rounded-full bg-brown px-4 py-2.5 font-medium text-cream transition-opacity hover:opacity-90 disabled:opacity-60"
       >
-        {loading ? "Signing in…" : "Sign in"}
+        {loading ? t.login.submitting : t.login.submit}
       </button>
     </form>
   );

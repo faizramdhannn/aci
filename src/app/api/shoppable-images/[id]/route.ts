@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { deleteShoppableImage, getShoppableImageById, updateShoppableImage } from "@/lib/data";
+import { deleteImageIfUnused, deleteShoppableImage, getShoppableImageById, updateShoppableImage } from "@/lib/data";
 
 const patchSchema = z.object({
   status: z.enum(["draft", "published"]).optional(),
@@ -27,6 +27,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
   await updateShoppableImage(id, parsed.data);
+  if (parsed.data.imageUrl && parsed.data.imageUrl !== existing.imageUrl) {
+    await deleteImageIfUnused(existing.imageUrl);
+  }
   return NextResponse.json({ ok: true });
 }
 

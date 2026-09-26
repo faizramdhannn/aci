@@ -108,6 +108,8 @@ export interface ViewEvent {
   viewportWidth: number;
   viewportHeight: number;
   referrer?: string;
+  /** Same instant as createdAt, as a BSON Date so the TTL index can expire old events. */
+  ts?: Date;
 }
 
 export interface ClickEvent {
@@ -126,6 +128,8 @@ export interface ClickEvent {
   /** Normalized 0-1 click position on the source image. */
   clickX?: number;
   clickY?: number;
+  /** Same instant as createdAt, as a BSON Date so the TTL index can expire old events. */
+  ts?: Date;
 }
 
 /** Creator/site identity shown in the hero and footer, editable from /admin/settings. */
