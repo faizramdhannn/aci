@@ -120,6 +120,14 @@ const en = {
     text: "Text",
     font: "Font",
     textHint: "Drag the text on the canvas to reposition it.",
+    undo: "Undo",
+    redo: "Redo",
+    exportStory: "Export IG Story",
+    exporting: "Exporting…",
+    exportFailed: "Couldn't create the Story image.",
+    exported: "Story image ready.",
+    shortcuts:
+      "Shortcuts: Ctrl/⌘+Z undo · Ctrl/⌘+Shift+Z redo · Ctrl/⌘+D duplicate · arrow keys nudge (Shift = 10px) · Delete removes · hold Alt/Option to drag without snapping.",
   },
   addProduct: {
     title: "Add a product",
@@ -338,6 +346,14 @@ const id: AdminDictionary = {
     text: "Teks",
     font: "Font",
     textHint: "Seret teks di kanvas untuk memindahkannya.",
+    undo: "Urungkan",
+    redo: "Ulangi",
+    exportStory: "Ekspor Story IG",
+    exporting: "Mengekspor…",
+    exportFailed: "Gagal membuat gambar Story.",
+    exported: "Gambar Story siap.",
+    shortcuts:
+      "Pintasan: Ctrl/⌘+Z urungkan · Ctrl/⌘+Shift+Z ulangi · Ctrl/⌘+D duplikat · tombol panah untuk menggeser (Shift = 10px) · Delete menghapus · tahan Alt/Option untuk menggeser tanpa snap.",
   },
   addProduct: {
     title: "Tambah produk",

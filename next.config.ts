@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    // 75 is Next's default for page images; 90 is used for exported IG Story
+    // images (src/lib/story-export.ts). Next 16 rejects unlisted qualities.
+    qualities: [75, 90],
     // The offline demo/seed dataset ships its placeholder photos as local
     // SVGs (src/lib/seed-data.ts) so the app works with zero setup — actual
     // user uploads are restricted to JPEG/PNG/WEBP/GIF (see src/lib/storage.ts),
