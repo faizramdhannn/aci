@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import type { Metadata } from "next";
-import { getShoppableImageById, listHotspotsForImage, listAnnotationsForImage, listCategories } from "@/lib/data";
+import { getShoppableImageById, getSiteSettings, listHotspotsForImage, listAnnotationsForImage, listCategories } from "@/lib/data";
 import { HotspotEditor } from "@/components/editor/hotspot-editor";
 import { PublishToggle } from "@/components/editor/publish-toggle";
 import { ChangePhoto } from "@/components/editor/change-photo";
@@ -25,11 +25,12 @@ export default async function EditShoppableImagePage({ params }: { params: Param
   const image = await getShoppableImageById(id);
   if (!image) notFound();
 
-  const [hotspots, annotations, categories, t] = await Promise.all([
+  const [hotspots, annotations, categories, t, settings] = await Promise.all([
     listHotspotsForImage(image._id),
     listAnnotationsForImage(image._id),
     listCategories(),
     getAdminDictionary(),
+    getSiteSettings(),
   ]);
 
   return (
@@ -69,6 +70,7 @@ export default async function EditShoppableImagePage({ params }: { params: Param
         initialHotspots={hotspots}
         initialAnnotations={annotations}
         categories={categories.filter((c) => c.isActive)}
+        siteName={settings.siteName}
       />
     </div>
   );

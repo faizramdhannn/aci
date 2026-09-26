@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Stage, Layer, Image as KonvaImage, Circle, Arrow, Text, Group, Transformer } from "react-konva";
+import { Stage, Layer, Image as KonvaImage, Circle, Arrow, Text, Group, Transformer, Line } from "react-konva";
 import useImage from "use-image";
 import type Konva from "konva";
 import type { Annotation, ArrowStyle, Category, FontChoice, Hotspot, ShoppableImage } from "@/types";
@@ -12,6 +12,8 @@ import { CategoryChipPicker } from "@/components/admin/category-chip-picker";
 import { fontFamilyFor } from "@/lib/fonts";
 import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
 import { format } from "@/lib/i18n/dictionaries";
+import { useToast } from "@/components/ui/toast-provider";
+import { exportStoryImage } from "@/lib/story-export";
 
 const MAX_CANVAS_WIDTH = 480;
 const MIN_CANVAS_WIDTH = 220;
@@ -27,11 +29,14 @@ export function HotspotEditor({
   initialHotspots,
   initialAnnotations,
   categories,
+  siteName,
 }: {
   image: ShoppableImage;
   initialHotspots: Hotspot[];
   initialAnnotations: Annotation[];
   categories: Category[];
+  /** Wordmark printed on exported Story images. */
+  siteName: string;
 }) {
   const t = useAdminDictionary();
   const [hotspots, setHotspots] = useState(initialHotspots);
@@ -46,6 +51,8 @@ export function HotspotEditor({
   const [textColor, setTextColor] = useState(ARROW_COLORS[0]);
   const [drawing, setDrawing] = useState<{ x1: number; y1: number; x2: number; y2: number } | null>(null);
   const [bgImage] = useImage(image.imageUrl);
+  const [exporting, setExporting] = useState(false);
+  const toast = useToast();
 
   // Responsive canvas: shrinks to fit narrow (mobile) viewports instead of
   // overflowing the page at a fixed 480px width.
@@ -67,8 +74,15 @@ export function HotspotEditor({
   const scale = canvasWidth / image.imageWidth;
 
   const transformerRef = useRef<Konva.Transformer>(null);
+  const stageRef = useRef<Konva.Stage>(null);
+  const bgImageRef = useRef<Konva.Image>(null);
   const shapeRefs = useRef<Record<string, Konva.Circle | null>>({});
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // One debounce timer per item: a single shared timer used to cancel the
+  // pending save of item A whenever item B changed within the window, so
+  // A's edit was silently lost.
+  const saveTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const inFlight = useRef(0);
+  const [guides, setGuides] = useState<{ x: number | null; y: number | null }>({ x: null, y: null });
 
   useEffect(() => {
     if (selected?.kind === "hotspot" && transformerRef.current && shapeRefs.current[selected.id]) {
@@ -79,80 +93,61 @@ export function HotspotEditor({
     }
   }, [selected]);
 
-  const scheduleSaveHotspot = useCallback((hotspot: Hotspot) => {
-    setSaveState("unsaved");
-    if (saveTimer.current) clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(async () => {
-      setSaveState("saving");
-      try {
-        const res = await fetch(`/api/hotspots/${hotspot._id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            title: hotspot.title,
-            affiliateUrl: hotspot.affiliateUrl,
-            productPrice: hotspot.productPrice,
-            x: hotspot.x,
-            y: hotspot.y,
-            width: hotspot.width,
-            height: hotspot.height,
-            rotation: hotspot.rotation,
-            color: hotspot.color,
-            categoryIds: hotspot.categoryIds,
-          }),
-        });
-        setSaveState(res.ok ? "saved" : "error");
-      } catch {
-        setSaveState("error");
-      }
-    }, 900);
+  const runSave = useCallback(async (request: () => Promise<Response>) => {
+    inFlight.current++;
+    setSaveState("saving");
+    let ok = false;
+    try {
+      ok = (await request()).ok;
+    } catch {
+      ok = false;
+    }
+    inFlight.current--;
+    if (!ok) setSaveState("error");
+    else if (inFlight.current === 0 && saveTimers.current.size === 0) setSaveState("saved");
   }, []);
 
-  const scheduleSaveAnnotation = useCallback(
-    (annotation: Annotation) => {
+  const scheduleSave = useCallback(
+    (key: string, request: () => Promise<Response>) => {
       setSaveState("unsaved");
-      if (saveTimer.current) clearTimeout(saveTimer.current);
-      saveTimer.current = setTimeout(async () => {
-        setSaveState("saving");
-        try {
-          const res = await fetch(`/api/annotations/${annotation._id}`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              shoppableImageId: image._id,
-              color: annotation.color,
-              ...(annotation.kind === "arrow"
-                ? {
-                    x1: annotation.x1,
-                    y1: annotation.y1,
-                    x2: annotation.x2,
-                    y2: annotation.y2,
-                    strokeWidth: annotation.strokeWidth,
-                    style: annotation.style,
-                  }
-                : {
-                    text: annotation.text,
-                    fontFamily: annotation.fontFamily,
-                    fontSize: annotation.fontSize,
-                    x: annotation.x,
-                    y: annotation.y,
-                  }),
-            }),
-          });
-          setSaveState(res.ok ? "saved" : "error");
-        } catch {
-          setSaveState("error");
-        }
-      }, 900);
+      const pending = saveTimers.current.get(key);
+      if (pending) clearTimeout(pending);
+      saveTimers.current.set(
+        key,
+        setTimeout(() => {
+          saveTimers.current.delete(key);
+          runSave(request);
+        }, 900)
+      );
     },
-    [image._id]
+    [runSave]
+  );
+
+  const putHotspot = useCallback(
+    (hotspot: Hotspot) =>
+      fetch(`/api/hotspots/${hotspot._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(hotspot),
+      }),
+    []
+  );
+
+  const putAnnotation = useCallback(
+    (annotation: Annotation) =>
+      fetch(`/api/annotations/${annotation._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(annotation),
+      }),
+    []
   );
 
   function updateHotspot(id: string, patch: Partial<Hotspot>) {
     setHotspots((prev) => {
       const next = prev.map((h) => (h._id === id ? { ...h, ...patch } : h));
       const updated = next.find((h) => h._id === id);
-      if (updated) scheduleSaveHotspot(updated);
+      if (updated) scheduleSave(`h:${id}`, () => putHotspot(updated));
       return next;
     });
   }
@@ -161,10 +156,119 @@ export function HotspotEditor({
     setAnnotations((prev) => {
       const next = prev.map((a) => (a._id === id ? { ...a, ...patch } : a));
       const updated = next.find((a) => a._id === id);
-      if (updated) scheduleSaveAnnotation(updated);
+      if (updated) scheduleSave(`a:${id}`, () => putAnnotation(updated));
       return next;
     });
   }
+
+  // ---- Undo / redo -------------------------------------------------------
+  // The editor state settles into a checkpoint 400ms after the last change,
+  // so a whole drag or a burst of typing undoes as one step. Undoing diffs
+  // the target snapshot against what's on screen and syncs just the
+  // difference to the server (PUT restores, DELETE removes).
+  type Snapshot = { hotspots: Hotspot[]; annotations: Annotation[] };
+  const [settled, setSettled] = useState<Snapshot>({ hotspots: initialHotspots, annotations: initialAnnotations });
+  const [past, setPast] = useState<Snapshot[]>([]);
+  const [future, setFuture] = useState<Snapshot[]>([]);
+
+  useEffect(() => {
+    if (settled.hotspots === hotspots && settled.annotations === annotations) return;
+    const timer = setTimeout(() => {
+      setPast((p) => [...p.slice(-49), settled]);
+      setFuture([]);
+      setSettled({ hotspots, annotations });
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [hotspots, annotations, settled]);
+
+  function syncSnapshot(from: Snapshot, to: Snapshot) {
+    for (const timer of saveTimers.current.values()) clearTimeout(timer);
+    saveTimers.current.clear();
+
+    const requests: (() => Promise<Response>)[] = [];
+    for (const h of from.hotspots)
+      if (!to.hotspots.some((x) => x._id === h._id))
+        requests.push(() => fetch(`/api/hotspots/${h._id}`, { method: "DELETE" }));
+    for (const h of to.hotspots)
+      if (from.hotspots.find((x) => x._id === h._id) !== h) requests.push(() => putHotspot(h));
+    for (const a of from.annotations)
+      if (!to.annotations.some((x) => x._id === a._id))
+        requests.push(() => fetch(`/api/annotations/${a._id}`, { method: "DELETE" }));
+    for (const a of to.annotations)
+      if (from.annotations.find((x) => x._id === a._id) !== a) requests.push(() => putAnnotation(a));
+
+    for (const request of requests) runSave(request);
+  }
+
+  function applySnapshot(target: Snapshot) {
+    const current = { hotspots, annotations };
+    setHotspots(target.hotspots);
+    setAnnotations(target.annotations);
+    setSettled(target);
+    if (
+      selected &&
+      !target.hotspots.some((h) => h._id === selected.id) &&
+      !target.annotations.some((a) => a._id === selected.id)
+    ) {
+      setSelected(null);
+    }
+    syncSnapshot(current, target);
+  }
+
+  const hasUnsettledChange = settled.hotspots !== hotspots || settled.annotations !== annotations;
+  const canUndo = past.length > 0 || hasUnsettledChange;
+  const canRedo = future.length > 0 && !hasUnsettledChange;
+
+  function undo() {
+    const current = { hotspots, annotations };
+    if (hasUnsettledChange) {
+      setFuture((f) => [...f, current]);
+      applySnapshot(settled);
+      return;
+    }
+    const target = past[past.length - 1];
+    if (!target) return;
+    setPast((p) => p.slice(0, -1));
+    setFuture((f) => [...f, current]);
+    applySnapshot(target);
+  }
+
+  function redo() {
+    const target = future[future.length - 1];
+    if (!target || hasUnsettledChange) return;
+    setFuture((f) => f.slice(0, -1));
+    setPast((p) => [...p, { hotspots, annotations }]);
+    applySnapshot(target);
+  }
+
+  // ---- Snapping ----------------------------------------------------------
+  // While dragging, a marker's center (or a text label's center) snaps to
+  // the photo's center lines and to other markers' centers within a few
+  // pixels, with a guide line drawn. Hold Alt/Option to drag freely.
+  const SNAP_PX = 6;
+  function snapAxis(value: number, candidates: number[]): number | null {
+    let best: number | null = null;
+    for (const c of candidates) {
+      if (Math.abs(c - value) <= SNAP_PX && (best === null || Math.abs(c - value) < Math.abs(best - value))) best = c;
+    }
+    return best;
+  }
+
+  function snapCenter(centerX: number, centerY: number, excludeId: string, freeDrag: boolean) {
+    if (freeDrag) {
+      setGuides({ x: null, y: null });
+      return { x: centerX, y: centerY };
+    }
+    const others = hotspots.filter((h) => h._id !== excludeId && h.isActive);
+    const xs = [canvasWidth / 2, ...others.map((h) => h.x * canvasWidth)];
+    const ys = [canvasHeight / 2, ...others.map((h) => h.y * canvasHeight)];
+    const sx = snapAxis(centerX, xs);
+    const sy = snapAxis(centerY, ys);
+    setGuides({ x: sx, y: sy });
+    return { x: sx ?? centerX, y: sy ?? centerY };
+  }
+
+  const clearGuides = () => setGuides({ x: null, y: null });
 
   async function deleteSelected() {
     if (!selected) return;
@@ -176,6 +280,124 @@ export function HotspotEditor({
       await fetch(`/api/annotations/${selected.id}`, { method: "DELETE" });
     }
     setSelected(null);
+  }
+
+  // ---- Keyboard: nudge, duplicate, delete, undo/redo ---------------------
+  function nudge(dx: number, dy: number) {
+    if (!selected) return;
+    const clampMove = (v: number, d: number) => clamp01(v + d);
+    if (selected.kind === "hotspot") {
+      const h = hotspots.find((x) => x._id === selected.id);
+      if (h) updateHotspot(h._id, { x: clampMove(h.x, dx), y: clampMove(h.y, dy) });
+      return;
+    }
+    const a = annotations.find((x) => x._id === selected.id);
+    if (!a) return;
+    if (a.kind === "text") updateAnnotation(a._id, { x: clampMove(a.x!, dx), y: clampMove(a.y!, dy) });
+    else
+      updateAnnotation(a._id, {
+        x1: clampMove(a.x1!, dx),
+        y1: clampMove(a.y1!, dy),
+        x2: clampMove(a.x2!, dx),
+        y2: clampMove(a.y2!, dy),
+      });
+  }
+
+  function duplicateSelected() {
+    if (!selected) return;
+    const offset = 0.03;
+    const now = new Date().toISOString();
+    if (selected.kind === "hotspot") {
+      const h = hotspots.find((x) => x._id === selected.id);
+      if (!h) return;
+      const copy: Hotspot = {
+        ...h,
+        _id: crypto.randomUUID(),
+        x: clamp01(h.x + offset),
+        y: clamp01(h.y + offset),
+        createdAt: now,
+        updatedAt: now,
+      };
+      setHotspots((prev) => [...prev, copy]);
+      runSave(() => putHotspot(copy));
+      setSelected({ kind: "hotspot", id: copy._id });
+      return;
+    }
+    const a = annotations.find((x) => x._id === selected.id);
+    if (!a) return;
+    const copy: Annotation =
+      a.kind === "text"
+        ? { ...a, _id: crypto.randomUUID(), x: clamp01(a.x! + offset), y: clamp01(a.y! + offset), createdAt: now, updatedAt: now }
+        : {
+            ...a,
+            _id: crypto.randomUUID(),
+            x1: clamp01(a.x1! + offset),
+            y1: clamp01(a.y1! + offset),
+            x2: clamp01(a.x2! + offset),
+            y2: clamp01(a.y2! + offset),
+            createdAt: now,
+            updatedAt: now,
+          };
+    setAnnotations((prev) => [...prev, copy]);
+    runSave(() => putAnnotation(copy));
+    setSelected({ kind: a.kind, id: copy._id });
+  }
+
+  // Re-bound every render so the handler always sees the latest state.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.target as HTMLElement).closest("input, textarea, select, [contenteditable='true']")) return;
+      const mod = e.metaKey || e.ctrlKey;
+      const key = e.key.toLowerCase();
+      if (mod && key === "z") {
+        e.preventDefault();
+        if (e.shiftKey) redo();
+        else undo();
+      } else if (mod && key === "y") {
+        e.preventDefault();
+        redo();
+      } else if (mod && key === "d") {
+        e.preventDefault();
+        duplicateSelected();
+      } else if (e.key === "Escape") {
+        setSelected(null);
+        setTool("select");
+      } else if ((e.key === "Delete" || e.key === "Backspace") && selected) {
+        e.preventDefault();
+        deleteSelected();
+      } else if (e.key.startsWith("Arrow") && selected) {
+        e.preventDefault();
+        const step = e.shiftKey ? 10 : 1;
+        const dx = e.key === "ArrowLeft" ? -step : e.key === "ArrowRight" ? step : 0;
+        const dy = e.key === "ArrowUp" ? -step : e.key === "ArrowDown" ? step : 0;
+        nudge(dx / canvasWidth, dy / canvasHeight);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  });
+
+  async function exportStory() {
+    const stage = stageRef.current;
+    if (!stage) return;
+    setExporting(true);
+    setSelected(null);
+    transformerRef.current?.nodes([]);
+    try {
+      await exportStoryImage({
+        stage,
+        hideForExport: [bgImageRef.current, ...stage.find(".editor-only")],
+        image,
+        canvasWidth,
+        siteName,
+      });
+      toast(t.editor.exported);
+    } catch (error) {
+      console.error("[aci] story export failed:", error);
+      toast(t.editor.exportFailed, "error");
+    } finally {
+      setExporting(false);
+    }
   }
 
   function stagePointToNormalized(stage: Konva.Stage) {
@@ -260,6 +482,31 @@ export function HotspotEditor({
           >
             {t.common.delete}
           </button>
+          <button
+            onClick={undo}
+            disabled={!canUndo}
+            aria-label={t.editor.undo}
+            title={`${t.editor.undo} (Ctrl/⌘+Z)`}
+            className="rounded-full border border-brown/20 px-2.5 py-1.5 text-xs text-brown-soft transition-colors hover:text-brown disabled:opacity-40"
+          >
+            ↶
+          </button>
+          <button
+            onClick={redo}
+            disabled={!canRedo}
+            aria-label={t.editor.redo}
+            title={`${t.editor.redo} (Ctrl/⌘+Shift+Z)`}
+            className="rounded-full border border-brown/20 px-2.5 py-1.5 text-xs text-brown-soft transition-colors hover:text-brown disabled:opacity-40"
+          >
+            ↷
+          </button>
+          <button
+            onClick={exportStory}
+            disabled={exporting}
+            className="rounded-full border border-brown/20 px-3 py-1.5 text-xs font-medium text-brown-soft transition-colors hover:text-brown disabled:opacity-40"
+          >
+            {exporting ? t.editor.exporting : t.editor.exportStory}
+          </button>
           <span className="ml-auto text-xs text-brown-soft">{t.editor.state[saveState]}</span>
         </div>
 
@@ -283,10 +530,13 @@ export function HotspotEditor({
           className="w-full max-w-[480px] overflow-hidden rounded-xl border border-brown/10 bg-brown/5"
         >
           <Stage
+            ref={stageRef}
             width={canvasWidth}
             height={canvasHeight}
-            style={{ cursor }}
-            onMouseDown={(e) => {
+            style={{ cursor, touchAction: tool === "select" ? "auto" : "none" }}
+            // Pointer (not mouse) events, so drawing arrows and dropping text
+            // also work with a finger on phones.
+            onPointerDown={(e) => {
               if (tool === "add-arrow") {
                 const p = stagePointToNormalized(e.target.getStage()!);
                 if (p) setDrawing({ x1: p.x, y1: p.y, x2: p.x, y2: p.y });
@@ -295,19 +545,19 @@ export function HotspotEditor({
               if (tool === "add-text") return;
               if (e.target === e.target.getStage()) setSelected(null);
             }}
-            onMouseMove={(e) => {
+            onPointerMove={(e) => {
               if (tool === "add-arrow" && drawing) {
                 const p = stagePointToNormalized(e.target.getStage()!);
                 if (p) setDrawing((d) => (d ? { ...d, x2: p.x, y2: p.y } : d));
               }
             }}
-            onMouseUp={(e) => {
+            onPointerUp={(e) => {
               if (tool === "add-arrow" && drawing) finishDrawing();
               if (tool === "add-text") placeText(e.target.getStage()!);
             }}
           >
             <Layer>
-              {bgImage && <KonvaImage image={bgImage} width={canvasWidth} height={canvasHeight} />}
+              {bgImage && <KonvaImage ref={bgImageRef} image={bgImage} width={canvasWidth} height={canvasHeight} />}
 
               {arrows.map((a) => {
                 const points = toFlatPoints(
@@ -401,13 +651,19 @@ export function HotspotEditor({
                   onClick={() => tool === "select" && setSelected({ kind: "text", id: t._id })}
                   onTap={() => tool === "select" && setSelected({ kind: "text", id: t._id })}
                   onDragMove={(e) => {
+                    const node = e.target;
+                    const halfW = node.width() / 2;
+                    const halfH = node.height() / 2;
+                    const c = snapCenter(node.x() + halfW, node.y() + halfH, t._id, e.evt.altKey);
+                    node.position({ x: c.x - halfW, y: c.y - halfH });
                     const p = pixelsToNormalized(
-                      { x: e.target.x(), y: e.target.y(), width: 0, height: 0 },
+                      { x: node.x(), y: node.y(), width: 0, height: 0 },
                       canvasWidth,
                       canvasHeight
                     );
                     updateAnnotation(t._id, { x: clamp01(p.x), y: clamp01(p.y) });
                   }}
+                  onDragEnd={clearGuides}
                 />
               ))}
 
@@ -437,13 +693,16 @@ export function HotspotEditor({
                         onClick={() => tool === "select" && setSelected({ kind: "hotspot", id: hotspot._id })}
                         onTap={() => tool === "select" && setSelected({ kind: "hotspot", id: hotspot._id })}
                         onDragMove={(e) => {
+                          const c = snapCenter(e.target.x(), e.target.y(), hotspot._id, e.evt.altKey);
+                          e.target.position(c);
                           const { x, y } = pixelsToNormalized(
-                            { x: e.target.x(), y: e.target.y(), width: 0, height: 0 },
+                            { x: c.x, y: c.y, width: 0, height: 0 },
                             canvasWidth,
                             canvasHeight
                           );
                           updateHotspot(hotspot._id, { x: clamp01(x), y: clamp01(y) });
                         }}
+                        onDragEnd={clearGuides}
                         onTransformEnd={(e) => {
                           const node = e.target as unknown as Konva.Circle;
                           const scaleX = node.scaleX();
@@ -466,10 +725,32 @@ export function HotspotEditor({
                         radius={3}
                         fill="#FBBA00"
                         listening={false}
+                        name="editor-only"
                       />
                     </Group>
                   );
                 })}
+
+              {guides.x !== null && (
+                <Line
+                  points={[guides.x, 0, guides.x, canvasHeight]}
+                  stroke="#E5781E"
+                  strokeWidth={1}
+                  dash={[4, 4]}
+                  listening={false}
+                  name="guide"
+                />
+              )}
+              {guides.y !== null && (
+                <Line
+                  points={[0, guides.y, canvasWidth, guides.y]}
+                  stroke="#E5781E"
+                  strokeWidth={1}
+                  dash={[4, 4]}
+                  listening={false}
+                  name="guide"
+                />
+              )}
 
               <Transformer
                 ref={transformerRef}
@@ -492,6 +773,7 @@ export function HotspotEditor({
           {format(t.editor.scale, { pct: (scale * 100).toFixed(0), w: image.imageWidth, h: image.imageHeight })}{" "}
           {tool === "add-arrow" ? t.editor.hintArrow : tool === "add-text" ? t.editor.hintText : t.editor.hintSelect}
         </p>
+        <p className="mt-1 hidden text-[11px] text-brown-soft md:block">{t.editor.shortcuts}</p>
       </div>
 
       <div className="min-w-0">
