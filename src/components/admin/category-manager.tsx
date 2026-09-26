@@ -6,10 +6,13 @@ import type { Category } from "@/types";
 import { CategoryIcon } from "@/components/admin/category-icons";
 import { IconPicker } from "@/components/admin/icon-picker";
 import { useToast } from "@/components/ui/toast-provider";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
+import { format } from "@/lib/i18n/dictionaries";
 
 export function CategoryManager({ initialCategories }: { initialCategories: Category[] }) {
   const router = useRouter();
   const toast = useToast();
+  const t = useAdminDictionary();
   const [categories, setCategories] = useState(initialCategories);
   const [name, setName] = useState("");
   const [icon, setIcon] = useState<string | undefined>(undefined);
@@ -33,7 +36,7 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     setLoading(false);
 
     if (!res.ok) {
-      setError("Couldn't create that category.");
+      setError(t.categories.createFailed);
       return;
     }
 
@@ -41,7 +44,7 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     setCategories((prev) => [...prev, category]);
     setName("");
     setIcon(undefined);
-    toast(`"${category.name}" added.`);
+    toast(format(t.categories.added, { name: category.name }));
     router.refresh();
   }
 
@@ -57,7 +60,7 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     });
     if (!res.ok) {
       setCategories(previous);
-      toast("Couldn't rename that category.", "error");
+      toast(t.categories.renameFailed, "error");
       return;
     }
     router.refresh();
@@ -73,7 +76,7 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     });
     if (!res.ok) {
       setCategories(previous);
-      toast("Couldn't update the icon.", "error");
+      toast(t.categories.iconFailed, "error");
       return;
     }
     router.refresh();
@@ -90,7 +93,7 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     });
     if (!res.ok) {
       setCategories(previous);
-      toast("Couldn't update that category.", "error");
+      toast(t.categories.updateFailed, "error");
       return;
     }
     router.refresh();
@@ -102,10 +105,10 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     const res = await fetch(`/api/categories/${id}`, { method: "DELETE" });
     if (!res.ok) {
       setCategories(previous);
-      toast("Couldn't delete that category.", "error");
+      toast(t.categories.deleteFailed, "error");
       return;
     }
-    toast("Category deleted.");
+    toast(t.categories.deleted);
     router.refresh();
   }
 
@@ -135,16 +138,16 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
     <div>
       <form onSubmit={onCreate} className="mb-6 space-y-3 rounded-xl border border-brown/10 bg-surface/70 p-4">
         <label className="block text-sm">
-          <span className="mb-1 block text-brown-soft">New category</span>
+          <span className="mb-1 block text-brown-soft">{t.categories.newLabel}</span>
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="e.g. Outerwear"
+            placeholder={t.categories.newPlaceholder}
             className="w-full rounded-lg border border-brown/20 bg-cream px-3 py-2 outline-none focus:border-orange"
           />
         </label>
         <div>
-          <span className="mb-1 block text-sm text-brown-soft">Icon (optional)</span>
+          <span className="mb-1 block text-sm text-brown-soft">{t.categories.icon}</span>
           <IconPicker value={icon} onChange={setIcon} />
         </div>
         <button
@@ -152,13 +155,13 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
           disabled={loading || !name.trim()}
           className="rounded-full bg-orange px-4 py-2 text-sm font-semibold text-cream transition-opacity hover:opacity-90 disabled:opacity-60"
         >
-          Add category
+          {t.categories.add}
         </button>
       </form>
       {error && <p className="mb-4 text-sm text-orange">{error}</p>}
 
       {categories.length === 0 ? (
-        <p className="text-sm text-brown-soft">No categories yet.</p>
+        <p className="text-sm text-brown-soft">{t.categories.empty}</p>
       ) : (
         <ul className="divide-y divide-brown/10 rounded-xl border border-brown/10 bg-surface/70">
           {categories.map((category, i) => (
@@ -168,7 +171,7 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
                   <button
                     onClick={() => moveOrder(category._id, -1)}
                     disabled={i === 0}
-                    aria-label="Move up"
+                    aria-label={t.categories.moveUp}
                     className="text-brown-soft hover:text-brown disabled:opacity-30"
                   >
                     ▲
@@ -176,7 +179,7 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
                   <button
                     onClick={() => moveOrder(category._id, 1)}
                     disabled={i === categories.length - 1}
-                    aria-label="Move down"
+                    aria-label={t.categories.moveDown}
                     className="text-brown-soft hover:text-brown disabled:opacity-30"
                   >
                     ▼
@@ -185,7 +188,7 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
 
                 <button
                   onClick={() => setIconEditingId(iconEditingId === category._id ? null : category._id)}
-                  aria-label="Change icon"
+                  aria-label={t.categories.changeIcon}
                   className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-brown/15 text-brown-soft hover:text-brown"
                 >
                   <CategoryIcon name={category.icon} className="h-4 w-4" />
@@ -217,10 +220,10 @@ export function CategoryManager({ initialCategories }: { initialCategories: Cate
                   onClick={() => onToggleActive(category)}
                   className="text-xs font-medium text-brown-soft hover:text-brown"
                 >
-                  {category.isActive ? "Archive" : "Restore"}
+                  {category.isActive ? t.categories.archive : t.categories.restore}
                 </button>
                 <button onClick={() => onDelete(category._id)} className="text-xs font-medium text-brown-soft hover:text-orange">
-                  Delete
+                  {t.common.delete}
                 </button>
               </div>
 

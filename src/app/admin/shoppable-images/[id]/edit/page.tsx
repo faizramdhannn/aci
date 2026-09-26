@@ -8,6 +8,7 @@ import { ChangePhoto } from "@/components/editor/change-photo";
 import { LookCategoriesEditor } from "@/components/editor/look-categories-editor";
 import { FeaturedToggle } from "@/components/editor/featured-toggle";
 import { ReframePhoto } from "@/components/editor/reframe-photo";
+import { getAdminDictionary } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
 
@@ -15,8 +16,8 @@ type Params = Promise<{ id: string }>;
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { id } = await params;
-  const image = await getShoppableImageById(id);
-  return { title: image ? `Edit ${image.title}` : "Edit look" };
+  const [image, t] = await Promise.all([getShoppableImageById(id), getAdminDictionary()]);
+  return { title: image ? `${t.common.edit}: ${image.title}` : t.common.edit };
 }
 
 export default async function EditShoppableImagePage({ params }: { params: Params }) {
@@ -24,10 +25,11 @@ export default async function EditShoppableImagePage({ params }: { params: Param
   const image = await getShoppableImageById(id);
   if (!image) notFound();
 
-  const [hotspots, annotations, categories] = await Promise.all([
+  const [hotspots, annotations, categories, t] = await Promise.all([
     listHotspotsForImage(image._id),
     listAnnotationsForImage(image._id),
     listCategories(),
+    getAdminDictionary(),
   ]);
 
   return (
@@ -35,14 +37,14 @@ export default async function EditShoppableImagePage({ params }: { params: Param
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-brown">{image.title}</h1>
-          <p className="text-sm text-brown-soft">Drag hotspots onto the photo, resize with the handles.</p>
+          <p className="text-sm text-brown-soft">{t.editor.intro}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Link
             href={`/admin/shoppable-images/${image._id}/heatmap`}
             className="rounded-full border border-brown/20 px-4 py-1.5 text-xs font-medium text-brown-soft transition-colors hover:text-brown"
           >
-            Heatmap
+            {t.editor.heatmap}
           </Link>
           <ChangePhoto imageId={image._id} />
           <ReframePhoto

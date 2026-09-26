@@ -82,11 +82,16 @@ body {
   border: 1px solid color-mix(in srgb, var(--color-brown) 12%, transparent);
 }
 
+/* Always a dark panel with light text, in both themes: in dark mode
+   --color-brown flips to a light tone, which used to turn this into a light
+   panel with yellow-on-cream (unreadable) active items. Re-pinning
+   --color-cream here keeps text-cream light for everything inside. */
 .glass-dark {
-  background: color-mix(in srgb, var(--color-brown) 78%, transparent);
+  --color-cream: #fdf9e3;
+  background: color-mix(in srgb, #2b1e17 88%, transparent);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid color-mix(in srgb, var(--color-cream) 18%, transparent);
+  border: 1px solid color-mix(in srgb, #fdf9e3 18%, transparent);
 }
 
 /* Soft pulse ring behind storefront hotspot markers so they read as tappable

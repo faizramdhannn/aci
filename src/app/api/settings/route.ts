@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
-import { updateSiteSettings } from "@/lib/data";
+import { deleteImageIfUnused, getSiteSettings, updateSiteSettings } from "@/lib/data";
 
 const optionalUrl = z.union([z.literal(""), z.string().url()]).optional();
 
@@ -27,6 +27,10 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: field ? `Check the "${String(field)}" field.` : "Invalid settings." }, { status: 400 });
   }
 
+  const previousAvatar = (await getSiteSettings()).avatarUrl;
   await updateSiteSettings(parsed.data);
+  if (parsed.data.avatarUrl !== undefined && parsed.data.avatarUrl !== previousAvatar) {
+    await deleteImageIfUnused(previousAvatar);
+  }
   return NextResponse.json({ ok: true });
 }

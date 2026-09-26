@@ -1,5 +1,5 @@
 import { randomUUID } from "crypto";
-import { mkdir, writeFile } from "fs/promises";
+import { mkdir, unlink, writeFile } from "fs/promises";
 import path from "path";
 
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
@@ -48,4 +48,25 @@ export async function uploadImage(file: File): Promise<{ url: string }> {
   await writeFile(path.join(uploadsDir, filename), buffer);
 
   return { url: `/uploads/${filename}` };
+}
+
+/**
+ * Deletes a file previously returned by uploadImage. Only touches files this
+ * app owns — Vercel Blob URLs and /uploads/ paths; seed assets and anything
+ * else are left alone. Best-effort: failures are logged, never thrown, since
+ * a leftover file is harmless and must not break the edit that triggered it.
+ */
+export async function deleteStoredImage(url: string): Promise<void> {
+  try {
+    if (/^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//.test(url)) {
+      if (!process.env.BLOB_READ_WRITE_TOKEN) return;
+      const { del } = await import("@vercel/blob");
+      await del(url, { token: process.env.BLOB_READ_WRITE_TOKEN });
+      return;
+    }
+    const match = url.match(/^\/uploads\/([\w-]+\.(?:jpg|png|webp|gif))$/);
+    if (match) await unlink(path.join(process.cwd(), "public", "uploads", match[1]));
+  } catch (error) {
+    console.warn("[aci] couldn't delete old image:", url, (error as Error).message);
+  }
 }

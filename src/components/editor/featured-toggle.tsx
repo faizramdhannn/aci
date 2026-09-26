@@ -3,10 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useToast } from "@/components/ui/toast-provider";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
 
 export function FeaturedToggle({ imageId, featured }: { imageId: string; featured: boolean }) {
   const router = useRouter();
   const toast = useToast();
+  const t = useAdminDictionary();
   const [loading, setLoading] = useState(false);
 
   async function toggle() {
@@ -18,10 +20,10 @@ export function FeaturedToggle({ imageId, featured }: { imageId: string; feature
     });
     setLoading(false);
     if (!res.ok) {
-      toast("Couldn't update featured status.", "error");
+      toast(t.editor.featuredFailed, "error");
       return;
     }
-    toast(featured ? "Removed from the homepage carousel." : "Featured in the homepage carousel.");
+    toast(featured ? t.editor.featuredOff : t.editor.featuredOn);
     router.refresh();
   }
 
@@ -34,7 +36,7 @@ export function FeaturedToggle({ imageId, featured }: { imageId: string; feature
         featured ? "border-yellow bg-yellow/20 text-brown" : "border-brown/20 text-brown-soft hover:text-brown"
       }`}
     >
-      {featured ? "★ Featured" : "☆ Feature on homepage"}
+      {featured ? t.editor.featured : t.editor.feature}
     </button>
   );
 }

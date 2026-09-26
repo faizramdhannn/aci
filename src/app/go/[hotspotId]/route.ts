@@ -31,7 +31,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   // cookies would otherwise reset the limit) + hotspot. The affiliate
   // redirect itself is never blocked — only the click recording is skipped.
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  const shouldRecord = allowRateLimitedHit(`${ip}:${hotspot._id}`);
+  const shouldRecord = await allowRateLimitedHit(`${ip}:${hotspot._id}`);
 
   // cx/cy is the real click position (normalized 0-1 on the photo), sent by
   // the storefront's click handler — used for a true per-pixel heatmap

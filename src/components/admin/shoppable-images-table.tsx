@@ -5,10 +5,13 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ShoppableImage } from "@/types";
 import { useToast } from "@/components/ui/toast-provider";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
+import { format } from "@/lib/i18n/dictionaries";
 
 export function ShoppableImagesTable({ initialImages }: { initialImages: ShoppableImage[] }) {
   const router = useRouter();
   const toast = useToast();
+  const t = useAdminDictionary();
   const [images, setImages] = useState(initialImages);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -30,7 +33,7 @@ export function ShoppableImagesTable({ initialImages }: { initialImages: Shoppab
 
   async function bulkAction(action: "publish" | "draft" | "delete") {
     if (selected.size === 0) return;
-    if (action === "delete" && !confirm(`Delete ${selected.size} look(s)? This can't be undone.`)) return;
+    if (action === "delete" && !confirm(format(t.looks.confirmDeleteMany, { n: selected.size }))) return;
 
     setBusy(true);
     const ids = Array.from(selected);
@@ -42,17 +45,17 @@ export function ShoppableImagesTable({ initialImages }: { initialImages: Shoppab
     setBusy(false);
 
     if (!res.ok) {
-      toast("That bulk action failed.", "error");
+      toast(t.looks.bulkFailed, "error");
       return;
     }
 
     if (action === "delete") {
       setImages((prev) => prev.filter((i) => !selected.has(i._id)));
-      toast(`${ids.length} look(s) deleted.`);
+      toast(format(t.looks.deletedMany, { n: ids.length }));
     } else {
       const status = action === "publish" ? "published" : "draft";
       setImages((prev) => prev.map((i) => (selected.has(i._id) ? { ...i, status } : i)));
-      toast(`${ids.length} look(s) ${action === "publish" ? "published" : "moved to draft"}.`);
+      toast(format(action === "publish" ? t.looks.publishedMany : t.looks.draftedMany, { n: ids.length }));
     }
     setSelected(new Set());
     router.refresh();
@@ -64,23 +67,23 @@ export function ShoppableImagesTable({ initialImages }: { initialImages: Shoppab
     setBusy(false);
 
     if (!res.ok) {
-      toast("Couldn't duplicate that look.", "error");
+      toast(t.looks.duplicateFailed, "error");
       return;
     }
     const copy: ShoppableImage = await res.json();
     setImages((prev) => [copy, ...prev]);
-    toast(`Duplicated as "${copy.title}".`);
+    toast(format(t.looks.duplicated, { title: copy.title }));
     router.refresh();
   }
 
   async function deleteOne(id: string, title: string) {
-    if (!confirm(`Delete "${title}"? This can't be undone.`)) return;
+    if (!confirm(format(t.looks.confirmDeleteOne, { title }))) return;
     setBusy(true);
     const res = await fetch(`/api/shoppable-images/${id}`, { method: "DELETE" });
     setBusy(false);
 
     if (!res.ok) {
-      toast("Couldn't delete that look.", "error");
+      toast(t.looks.deleteFailed, "error");
       return;
     }
     setImages((prev) => prev.filter((i) => i._id !== id));
@@ -89,13 +92,13 @@ export function ShoppableImagesTable({ initialImages }: { initialImages: Shoppab
       next.delete(id);
       return next;
     });
-    toast("Deleted.");
+    toast(t.looks.deleted);
     router.refresh();
   }
 
   if (images.length === 0) {
     return (
-      <p className="text-brown-soft">No shoppable images yet. Upload your first look to start adding product links.</p>
+      <p className="text-brown-soft">{t.overview.empty}</p>
     );
   }
 
@@ -103,15 +106,15 @@ export function ShoppableImagesTable({ initialImages }: { initialImages: Shoppab
     <div>
       {selected.size > 0 && (
         <div className="mb-3 flex items-center gap-3 rounded-xl border border-brown/10 bg-surface/70 px-4 py-2 text-sm">
-          <span className="text-brown-soft">{selected.size} selected</span>
+          <span className="text-brown-soft">{format(t.looks.selected, { n: selected.size })}</span>
           <button disabled={busy} onClick={() => bulkAction("publish")} className="font-medium text-orange hover:underline disabled:opacity-50">
-            Publish
+            {t.looks.publish}
           </button>
           <button disabled={busy} onClick={() => bulkAction("draft")} className="font-medium text-brown hover:underline disabled:opacity-50">
-            Move to draft
+            {t.looks.moveToDraft}
           </button>
           <button disabled={busy} onClick={() => bulkAction("delete")} className="font-medium text-orange hover:underline disabled:opacity-50">
-            Delete
+            {t.common.delete}
           </button>
         </div>
       )}
@@ -121,11 +124,11 @@ export function ShoppableImagesTable({ initialImages }: { initialImages: Shoppab
           <thead className="bg-brown/5 text-xs uppercase tracking-wide text-brown-soft">
             <tr>
               <th className="w-10 px-4 py-3">
-                <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label="Select all" />
+                <input type="checkbox" checked={allSelected} onChange={toggleAll} aria-label={t.looks.selectAll} />
               </th>
-              <th className="px-4 py-3">Title</th>
-              <th className="px-4 py-3">Status</th>
-              <th className="px-4 py-3">Updated</th>
+              <th className="px-4 py-3">{t.looks.colTitle}</th>
+              <th className="px-4 py-3">{t.looks.colStatus}</th>
+              <th className="px-4 py-3">{t.looks.colUpdated}</th>
               <th className="px-4 py-3" />
             </tr>
           </thead>
@@ -137,28 +140,28 @@ export function ShoppableImagesTable({ initialImages }: { initialImages: Shoppab
                     type="checkbox"
                     checked={selected.has(image._id)}
                     onChange={() => toggleOne(image._id)}
-                    aria-label={`Select ${image.title}`}
+                    aria-label={format(t.looks.select, { title: image.title })}
                   />
                 </td>
                 <td className="px-4 py-3 font-medium text-brown">{image.title}</td>
-                <td className="px-4 py-3 capitalize text-brown-soft">{image.status}</td>
+                <td className="px-4 py-3 text-brown-soft">{image.status === "published" ? t.common.statusPublished : t.common.statusDraft}</td>
                 <td className="px-4 py-3 text-brown-soft">
                   {new Date(image.updatedAt).toLocaleDateString("id-ID")}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex justify-end gap-3">
                     <Link href={`/admin/shoppable-images/${image._id}/edit`} className="text-orange hover:underline">
-                      Edit
+                      {t.common.edit}
                     </Link>
                     <button disabled={busy} onClick={() => duplicate(image._id)} className="text-brown-soft hover:text-brown disabled:opacity-50">
-                      Duplicate
+                      {t.common.duplicate}
                     </button>
                     <button
                       disabled={busy}
                       onClick={() => deleteOne(image._id, image.title)}
                       className="text-brown-soft hover:text-orange disabled:opacity-50"
                     >
-                      Delete
+                      {t.common.delete}
                     </button>
                   </div>
                 </td>

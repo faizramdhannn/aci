@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { ASPECT_RATIOS, clampCrop, cropForRatio, type CropRect } from "@/lib/crop";
+import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
 
 /**
  * Pick an aspect ratio, then drag the frame to choose what to keep and use
@@ -14,7 +15,7 @@ export function ImageCropper({
   naturalWidth,
   naturalHeight,
   initialRatio = 4 / 5,
-  confirmLabel = "Use this crop",
+  confirmLabel,
   busy = false,
   onCancel,
   onConfirm,
@@ -28,6 +29,7 @@ export function ImageCropper({
   onCancel: () => void;
   onConfirm: (crop: CropRect) => void;
 }) {
+  const t = useAdminDictionary();
   const [ratio, setRatio] = useState<number | null>(initialRatio);
   const [size, setSize] = useState(1);
   const [crop, setCrop] = useState<CropRect>(() => cropForRatio(naturalWidth, naturalHeight, initialRatio));
@@ -83,7 +85,7 @@ export function ImageCropper({
               ratio === r.value ? "border-orange bg-orange text-cream" : "border-brown/20 text-brown-soft hover:text-brown"
             }`}
           >
-            {r.label}
+            {r.value === null ? t.cropper.original : r.label}
           </button>
         ))}
       </div>
@@ -126,7 +128,7 @@ export function ImageCropper({
 
       {ratio !== null && (
         <label className="mt-3 flex items-center gap-3 text-xs text-brown-soft">
-          Zoom
+          {t.cropper.zoom}
           <input
             type="range"
             min={0.3}
@@ -141,7 +143,7 @@ export function ImageCropper({
 
       <div className="mt-3 flex items-center justify-between gap-3">
         <span className="text-xs text-brown-soft">
-          {outputWidth}×{outputHeight}px{ratio !== null && " · drag the frame to reposition"}
+          {outputWidth}×{outputHeight}px{ratio !== null && ` · ${t.cropper.dragHint}`}
         </span>
         <div className="flex gap-2">
           <button
@@ -149,7 +151,7 @@ export function ImageCropper({
             onClick={onCancel}
             className="rounded-full border border-brown/20 px-4 py-1.5 text-xs font-medium text-brown-soft hover:text-brown"
           >
-            Cancel
+            {t.common.cancel}
           </button>
           <button
             type="button"
@@ -157,7 +159,7 @@ export function ImageCropper({
             onClick={() => onConfirm(crop)}
             className="rounded-full bg-orange px-4 py-1.5 text-xs font-semibold text-cream transition-opacity hover:opacity-90 disabled:opacity-60"
           >
-            {busy ? "Saving…" : confirmLabel}
+            {busy ? t.common.saving : (confirmLabel ?? t.cropper.useCrop)}
           </button>
         </div>
       </div>
