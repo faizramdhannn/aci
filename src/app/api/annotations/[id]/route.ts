@@ -7,6 +7,7 @@ import type { Annotation } from "@/types";
 const patchSchema = z.object({
   shoppableImageId: z.string().min(1),
   style: z.enum(["straight", "curved", "spiral"]).optional(),
+  flipped: z.boolean().optional(),
   color: z.string().optional(),
   strokeWidth: z.number().positive().optional(),
   x1: z.number().min(0).max(1).optional(),
@@ -56,6 +57,7 @@ const putSchema = z.object({
   color: nullable(z.string().min(1).default("#5A3D2B")),
   rotation: z.number().default(0),
   style: nullable(z.enum(["straight", "curved", "spiral"]).optional()),
+  flipped: nullable(z.boolean().optional()),
   strokeWidth: nullable(z.number().positive().optional()),
   x1: nullable(z.number().min(0).max(1).optional()),
   y1: nullable(z.number().min(0).max(1).optional()),

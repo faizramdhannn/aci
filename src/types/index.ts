@@ -72,6 +72,8 @@ export interface Annotation {
 
   // Arrow fields (kind === "arrow")
   style?: ArrowStyle;
+  /** Bend the curve/spiral to the other side. */
+  flipped?: boolean;
   strokeWidth?: number;
   /** Normalized 0-1 start/end points, relative to source image dimensions. */
   x1?: number;

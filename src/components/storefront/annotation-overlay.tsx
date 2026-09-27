@@ -48,7 +48,8 @@ export function AnnotationOverlay({
         const points = buildArrowPoints(
           a.style!,
           { x: a.x1! * imageWidth, y: a.y1! * imageHeight },
-          { x: a.x2! * imageWidth, y: a.y2! * imageHeight }
+          { x: a.x2! * imageWidth, y: a.y2! * imageHeight },
+          a.flipped
         );
         const d = points.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
         return (

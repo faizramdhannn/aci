@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { FlipHorizontal2 } from "lucide-react";
 import { Stage, Layer, Image as KonvaImage, Circle, Arrow, Text, Group, Transformer, Line } from "react-konva";
 import useImage from "use-image";
 import type Konva from "konva";
@@ -562,7 +563,7 @@ export function HotspotEditor({
 
               {arrows.map((a) => {
                 const points = toFlatPoints(
-                  buildArrowPoints(a.style!, { x: a.x1!, y: a.y1! }, { x: a.x2!, y: a.y2! })
+                  buildArrowPoints(a.style!, { x: a.x1!, y: a.y1! }, { x: a.x2!, y: a.y2! }, a.flipped)
                 ).map((v, i) => (i % 2 === 0 ? v * canvasWidth : v * canvasHeight));
                 const strokeWidthPx = a.strokeWidth! * canvasWidth;
 
@@ -799,6 +800,10 @@ export function HotspotEditor({
             canvasWidth={canvasWidth}
             onColor={(color) => updateAnnotation(selected.id, { color })}
             onWidth={(px) => updateAnnotation(selected.id, { strokeWidth: px / canvasWidth })}
+            onFlip={() => {
+              const a = annotations.find((x) => x._id === selected.id);
+              if (a) updateAnnotation(a._id, { flipped: !a.flipped });
+            }}
           />
         ) : selected?.kind === "text" ? (
           <SelectedTextDetails
@@ -1036,11 +1041,13 @@ function SelectedArrowDetails({
   canvasWidth,
   onColor,
   onWidth,
+  onFlip,
 }: {
   annotation: Annotation | null;
   canvasWidth: number;
   onColor: (color: string) => void;
   onWidth: (px: number) => void;
+  onFlip: () => void;
 }) {
   const t = useAdminDictionary();
   if (!annotation) return null;
@@ -1067,6 +1074,17 @@ function SelectedArrowDetails({
           className="w-full accent-orange"
         />
       </label>
+
+      {annotation.style !== "straight" && (
+        <button
+          type="button"
+          onClick={onFlip}
+          className="mt-4 flex items-center gap-1.5 rounded-full border border-brown/20 px-3 py-1.5 text-xs text-brown hover:border-orange/50"
+        >
+          <FlipHorizontal2 className="h-3.5 w-3.5" />
+          {t.editor.flipArrow}
+        </button>
+      )}
     </div>
   );
 }

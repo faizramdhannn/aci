@@ -7,11 +7,12 @@ export interface Point {
 
 /**
  * Generates the path points for an arrow between two normalized (0-1)
- * points, in the given style. Shared between the Konva editor (which draws
+ * points, in the given style. `flipped` mirrors the bend/curl to the other side. Shared between the Konva editor (which draws
  * a line through the points with an arrowhead at the last one) and the
  * public storefront's plain-SVG rendering.
  */
-export function buildArrowPoints(style: ArrowStyle, start: Point, end: Point): Point[] {
+export function buildArrowPoints(style: ArrowStyle, start: Point, end: Point, flipped = false): Point[] {
+  const side = flipped ? -1 : 1;
   if (style === "straight") return [start, end];
 
   if (style === "curved") {
@@ -24,7 +25,7 @@ export function buildArrowPoints(style: ArrowStyle, start: Point, end: Point): P
     // well at any size.
     const nx = -dy / len;
     const ny = dx / len;
-    const bend = len * 0.35;
+    const bend = len * 0.35 * side;
     const cx = mx + nx * bend;
     const cy = my + ny * bend;
 
@@ -53,7 +54,7 @@ export function buildArrowPoints(style: ArrowStyle, start: Point, end: Point): P
     const radius = 1 - t;
     const angle = t * turns * 2 * Math.PI;
     const lx = radius * Math.cos(angle);
-    const ly = radius * Math.sin(angle);
+    const ly = side * radius * Math.sin(angle);
     const wx = end.x + scale * (lx * Math.cos(theta0) - ly * Math.sin(theta0));
     const wy = end.y + scale * (lx * Math.sin(theta0) + ly * Math.cos(theta0));
     points.push({ x: wx, y: wy });
