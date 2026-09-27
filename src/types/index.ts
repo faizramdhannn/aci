@@ -19,6 +19,12 @@ export interface ShoppableImage {
   status: "draft" | "published";
   /** Shown in the homepage hero carousel (instead of the regular grid). */
   featured?: boolean;
+  /**
+   * Per-category framing for the shop grid, keyed by category id (normalized
+   * 0–1 crop of this photo). Categories without an entry are auto-framed
+   * around their products' markers.
+   */
+  categoryCrops?: Record<string, { x: number; y: number; width: number; height: number }>;
   createdAt: string;
   updatedAt: string;
 }

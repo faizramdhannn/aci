@@ -8,6 +8,7 @@ import type { Annotation, ArrowStyle, Category, FontChoice, Hotspot, ShoppableIm
 import { clamp01, pixelsToNormalized } from "@/lib/coordinates";
 import { buildArrowPoints, toFlatPoints } from "@/lib/arrow-shapes";
 import { AddProductModal } from "@/components/editor/add-product-modal";
+import { CategoryCropsEditor } from "@/components/editor/category-crops-editor";
 import { CategoryChipPicker } from "@/components/admin/category-chip-picker";
 import { fontFamilyFor } from "@/lib/fonts";
 import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
@@ -811,6 +812,10 @@ export function HotspotEditor({
         ) : (
           <p className="text-sm text-brown-soft">{t.editor.empty}</p>
         )}
+      </div>
+
+      <div className="min-w-0 md:col-span-2">
+        <CategoryCropsEditor image={image} hotspots={hotspots} categories={categories} />
       </div>
 
       {tool === "add-product" && (

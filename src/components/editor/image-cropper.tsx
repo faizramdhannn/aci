@@ -15,6 +15,8 @@ export function ImageCropper({
   naturalWidth,
   naturalHeight,
   initialRatio = 4 / 5,
+  initialCrop,
+  lockRatio = false,
   confirmLabel,
   busy = false,
   onCancel,
@@ -24,6 +26,10 @@ export function ImageCropper({
   naturalWidth: number;
   naturalHeight: number;
   initialRatio?: number | null;
+  /** Start from this crop (must match initialRatio) instead of a centered one. */
+  initialCrop?: CropRect;
+  /** Hide the ratio picker and keep initialRatio. */
+  lockRatio?: boolean;
   confirmLabel?: string;
   busy?: boolean;
   onCancel: () => void;
@@ -31,8 +37,11 @@ export function ImageCropper({
 }) {
   const t = useAdminDictionary();
   const [ratio, setRatio] = useState<number | null>(initialRatio);
-  const [size, setSize] = useState(1);
-  const [crop, setCrop] = useState<CropRect>(() => cropForRatio(naturalWidth, naturalHeight, initialRatio));
+  // Zoom is the crop's size relative to the biggest crop of this ratio.
+  const [size, setSize] = useState(() =>
+    initialCrop ? initialCrop.width / cropForRatio(naturalWidth, naturalHeight, initialRatio).width : 1
+  );
+  const [crop, setCrop] = useState<CropRect>(() => initialCrop ?? cropForRatio(naturalWidth, naturalHeight, initialRatio));
   const frameRef = useRef<HTMLDivElement>(null);
   const drag = useRef<{ pointerX: number; pointerY: number; start: CropRect } | null>(null);
 
@@ -74,7 +83,7 @@ export function ImageCropper({
 
   return (
     <div className="rounded-xl border border-brown/10 bg-surface/70 p-4">
-      <div className="mb-3 flex flex-wrap gap-1.5">
+      <div className={`mb-3 flex-wrap gap-1.5 ${lockRatio ? "hidden" : "flex"}`}>
         {ASPECT_RATIOS.map((r) => (
           <button
             key={r.label}

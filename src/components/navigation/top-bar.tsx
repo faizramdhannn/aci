@@ -1,14 +1,13 @@
 import Link from "next/link";
-import { desktopNavItems } from "@/config/site";
+import { DesktopNavLinks, FavoritesNavLink } from "@/components/navigation/desktop-nav-links";
 import { SearchPopover } from "@/components/navigation/search-popover";
 import { ThemeToggle } from "@/components/navigation/theme-toggle";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { Logo } from "@/components/navigation/logo";
-import { getDictionary } from "@/lib/i18n/server";
 import { getSiteSettings } from "@/lib/data";
 
 export async function TopBar() {
-  const [t, settings] = await Promise.all([getDictionary(), getSiteSettings()]);
+  const settings = await getSiteSettings();
 
   return (
     <>
@@ -20,19 +19,11 @@ export async function TopBar() {
               {settings.siteName}
             </Link>
 
-            <nav className="flex items-center gap-8 text-sm font-medium text-brown-soft">
-              {desktopNavItems.map((item) => (
-                <Link key={item.href} href={item.href} className="transition-colors hover:text-brown">
-                  {t.nav[item.key]}
-                </Link>
-              ))}
-            </nav>
+            <DesktopNavLinks />
 
             <div className="flex items-center gap-4 text-sm font-medium text-brown-soft">
               <SearchPopover variant="desktop" />
-              <Link href="/favorites" className="transition-colors hover:text-brown">
-                {t.nav.favorites}
-              </Link>
+              <FavoritesNavLink />
               <LanguageToggle />
               <ThemeToggle />
             </div>

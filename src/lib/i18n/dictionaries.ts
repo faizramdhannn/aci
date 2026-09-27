@@ -27,7 +27,7 @@ const en = {
     empty: "No looks yet — check back soon.",
     featured: "Featured",
   },
-  shop: { title: "Shop", empty: "Nothing here yet." },
+  shop: { title: "Shop", empty: "Nothing here yet.", fromLook: "From “{title}”" },
   categories: { title: "Categories", all: "All", empty: "Nothing here yet." },
   favorites: {
     title: "Favorites",
@@ -113,7 +113,7 @@ const id: Dictionary = {
     empty: "Belum ada look — cek lagi nanti ya.",
     featured: "Pilihan",
   },
-  shop: { title: "Belanja", empty: "Belum ada apa-apa di sini." },
+  shop: { title: "Belanja", empty: "Belum ada apa-apa di sini.", fromLook: "Dari “{title}”" },
   categories: { title: "Kategori", all: "Semua", empty: "Belum ada apa-apa di sini." },
   favorites: {
     title: "Favorit",

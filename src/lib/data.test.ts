@@ -15,6 +15,7 @@ import {
   listHotspotsForImage,
   listPublishedImagesExcluding,
   listPublishedImagesPage,
+  listShopEntries,
   reframeShoppableImage,
   searchContent,
   updateShoppableImage,
@@ -165,6 +166,51 @@ describe("searchContent", () => {
 
   it("returns nothing for unrelated text", async () => {
     expect((await searchContent("zzqqxx")).images).toHaveLength(0);
+  });
+});
+
+describe("listShopEntries", () => {
+  it("makes one card per category of products in a look, framed on those products", async () => {
+    const store = getMemoryStore();
+    store.hotspots = store.hotspots.map((h) =>
+      h._id === "hs-1"
+        ? { ...h, categoryIds: ["cat-fashion"] }
+        : h._id === "hs-3"
+          ? { ...h, categoryIds: ["cat-bags"] }
+          : { ...h, categoryIds: [] }
+    );
+    const { items } = await listShopEntries({ page: 1, pageSize: 20 });
+    const creamCards = items.filter((e) => e.image._id === "img-cream-hijab");
+    expect(creamCards.map((e) => e.category._id)).toEqual(["cat-fashion", "cat-bags"]);
+    expect(creamCards[1].hotspots.map((h) => h._id)).toEqual(["hs-3"]);
+
+    const { image, crop } = creamCards[1];
+    expect((crop.width * image.imageWidth) / (crop.height * image.imageHeight)).toBeCloseTo(4 / 5, 5);
+    // The bag marker (hs-3) sits inside its own card's frame.
+    const bag = store.hotspots.find((h) => h._id === "hs-3")!;
+    expect(bag.x).toBeGreaterThan(crop.x);
+    expect(bag.x).toBeLessThan(crop.x + crop.width);
+    // A look with no categorized products doesn't appear at all.
+    expect(items.some((e) => e.image._id === "img-golden-hour")).toBe(false);
+  });
+
+  it("uses a saved framing when the admin set one", async () => {
+    const store = getMemoryStore();
+    store.hotspots = store.hotspots.map((h) => (h._id === "hs-1" ? { ...h, categoryIds: ["cat-fashion"] } : h));
+    const saved = { x: 0.1, y: 0.1, width: 0.5, height: 0.5 };
+    await updateShoppableImage("img-cream-hijab", { categoryCrops: { "cat-fashion": saved } });
+    const { items } = await listShopEntries({ page: 1, pageSize: 20 });
+    expect(items.find((e) => e.category._id === "cat-fashion")!.crop).toEqual(saved);
+  });
+
+  it("drops saved framings when the photo is re-cropped", async () => {
+    await updateShoppableImage("img-cream-hijab", { categoryCrops: { "cat-fashion": { x: 0, y: 0, width: 1, height: 1 } } });
+    await reframeShoppableImage("img-cream-hijab", { x: 0, y: 0, width: 1, height: 0.5 }, {
+      imageUrl: "/uploads/c.jpg",
+      imageWidth: 900,
+      imageHeight: 675,
+    });
+    expect((await getShoppableImageById("img-cream-hijab"))!.categoryCrops).toEqual({});
   });
 });
 

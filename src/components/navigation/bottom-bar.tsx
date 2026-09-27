@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { mobileNavItems } from "@/config/site";
 import { NavIcon } from "@/components/navigation/nav-icon";
 import { useDictionary } from "@/components/i18n/locale-provider";
+import { isActivePath } from "@/components/navigation/desktop-nav-links";
 
 export function BottomBar() {
   const pathname = usePathname();
@@ -16,13 +17,14 @@ export function BottomBar() {
       style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
       {mobileNavItems.map((item) => {
-        const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const active = isActivePath(pathname, item.href);
         return (
           <Link
             key={item.href}
             href={item.href}
+            aria-current={active ? "page" : undefined}
             className={`flex flex-1 flex-col items-center gap-1 rounded-2xl py-2 text-[11px] transition-colors ${
-              active ? "text-yellow" : "text-cream/70"
+              active ? "bg-cream/15 font-semibold text-yellow" : "text-cream/70"
             }`}
           >
             <NavIcon name={item.icon} active={active} />

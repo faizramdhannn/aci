@@ -11,7 +11,14 @@ const allowMemoryFallback =
 
 declare global {
   var _aciMongoClientPromise: Promise<MongoClient> | undefined;
+  var _aciMongoFailedAt: number | undefined;
 }
+
+// Dev only: after a failed connection, skip straight to the memory fallback
+// for a while instead of making every query on every page wait out the
+// connect timeout again (a page runs many queries, so that stacked up to
+// a minute or more).
+const DEV_RETRY_AFTER_MS = 30_000;
 
 function getClientPromise(): Promise<MongoClient> | null {
   if (!uri) return null;
@@ -37,6 +44,14 @@ function getClientPromise(): Promise<MongoClient> | null {
  * production it throws instead.
  */
 export async function getDb(): Promise<Db | null> {
+  if (
+    allowMemoryFallback &&
+    global._aciMongoFailedAt &&
+    Date.now() - global._aciMongoFailedAt < DEV_RETRY_AFTER_MS
+  ) {
+    return null;
+  }
+
   const promise = getClientPromise();
   if (!promise) {
     if (allowMemoryFallback) return null;
@@ -45,9 +60,11 @@ export async function getDb(): Promise<Db | null> {
 
   try {
     const client = await promise;
+    global._aciMongoFailedAt = undefined;
     return client.db(process.env.MONGODB_DB_NAME || "aci");
   } catch (error) {
     if (!allowMemoryFallback) throw error;
+    global._aciMongoFailedAt = Date.now();
     console.warn("[aci] MongoDB unavailable, falling back to seed data:", (error as Error).message);
     return null;
   }

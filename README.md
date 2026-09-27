@@ -134,6 +134,8 @@ npm run seed -- --yes-wipe-everything   # DESTRUCTIVE: wipes the database and lo
 - Toast notifications (`src/components/ui/toast-provider.tsx`) confirm or surface failures for admin actions that previously failed silently: publish/unpublish, replacing a photo, editing look categories, and category create/rename/archive/delete
 - `/go/[hotspotId]` is rate-limited per IP+hotspot (in-memory, 5 recorded clicks/minute) to keep click analytics from being trivially inflated by spam — the affiliate redirect itself is never blocked, only the click recording
 - `sitemap.xml` and `robots.txt` (Next's built-in `sitemap.ts`/`robots.ts`) so published looks are discoverable by search engines; `/admin*` and `/api*` are disallowed
+- `/shop` shows one card per (look × product category): a look with a top and a bag becomes two cards, each a 4:5 crop framed on that category's products with only their markers shown. Framing is automatic (around the markers, with padding and a minimum size) and can be adjusted per category in the editor's "Shop photos per category" panel; re-cropping or replacing the photo resets custom framings. Looks with no categorized products don't appear in the shop (they're still on the homepage, categories, and search). The crop is pure CSS over the original photo — no extra image files
+- The current page is highlighted in the navigation: a filled pill in the desktop top bar, a tinted tab in the mobile bottom bar (`aria-current="page"`)
 - `/shop` and `/categories` are paginated (12 looks/page, `?page=`); the homepage caps its "Your looks" grid to 8 with a "See all" link to `/shop`. Only the images actually shown on a page have their hotspots/annotations fetched, not the whole catalog — keeps things fast regardless of how many looks you have
 - Photos are downscaled client-side (canvas, max 1600px on the longest side) before upload, so a 12MP+ phone photo doesn't turn into a slow upload or a bloated page later (`src/lib/compress-image.ts`)
 - Branded 404 and error pages (`src/app/not-found.tsx`, `src/app/error.tsx`) instead of the generic Next.js ones
@@ -182,6 +184,7 @@ Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to s
 - **Text annotations don't support rotation** in the UI yet (the data model has a `rotation` field, unused by the text tool for now).
 - **Multi-document writes aren't transactional** — deleting or duplicating a look writes the look, its hotspots, and its annotations separately; a failure halfway could leave stragglers.
 - **Without Upstash configured, the click rate limiter is per-instance** (in-memory). Set `UPSTASH_REDIS_REST_URL`/`UPSTASH_REDIS_REST_TOKEN` to share it across serverless instances.
+- **In development, if MongoDB is unreachable** the app falls back to demo data and skips reconnect attempts for 30s, so pages don't each wait out the connect timeout.
 - **Uploads abandoned mid-way** (uploaded, then the form was never saved) aren't cleaned up automatically; replaced/cropped/deleted photos are.
 - **"Import from URL" only works for public posts** that still expose an `og:image` tag, and only grabs the first/cover photo (not every image in a carousel post).
 

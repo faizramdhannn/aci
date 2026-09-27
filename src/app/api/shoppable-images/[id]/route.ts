@@ -12,6 +12,17 @@ const patchSchema = z.object({
   imageHeight: z.number().int().positive().optional(),
   categoryIds: z.array(z.string()).optional(),
   featured: z.boolean().optional(),
+  categoryCrops: z
+    .record(
+      z.string(),
+      z.object({
+        x: z.number().min(0).max(1),
+        y: z.number().min(0).max(1),
+        width: z.number().gt(0).max(1),
+        height: z.number().gt(0).max(1),
+      })
+    )
+    .optional(),
 });
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -26,8 +37,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   const parsed = patchSchema.safeParse(json);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  await updateShoppableImage(id, parsed.data);
-  if (parsed.data.imageUrl && parsed.data.imageUrl !== existing.imageUrl) {
+  const photoChanged = Boolean(parsed.data.imageUrl && parsed.data.imageUrl !== existing.imageUrl);
+  // A new photo invalidates saved per-category shop framings (they were relative to the old one).
+  await updateShoppableImage(id, photoChanged ? { ...parsed.data, categoryCrops: {} } : parsed.data);
+  if (photoChanged) {
     await deleteImageIfUnused(existing.imageUrl);
   }
   return NextResponse.json({ ok: true });

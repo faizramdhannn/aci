@@ -4,7 +4,7 @@ import type { Annotation, Category, ClickEvent, Hotspot, ShoppableImage, SiteSet
 import { randomUUID } from "crypto";
 import type { Filter } from "mongodb";
 import { paginate, type Paginated } from "@/lib/pagination";
-import { remapPoint, type CropRect } from "@/lib/crop";
+import { remapPoint, shopCropFor, type CropRect } from "@/lib/crop";
 import { deleteStoredImage } from "@/lib/storage";
 
 /**
@@ -150,7 +150,11 @@ export async function listPublishedImagesExcluding(excludeIds: string[], limit: 
 
 export async function listPublishedImages(): Promise<ShoppableImage[]> {
   const db = await getDb();
-  if (!db) return getMemoryStore().images.filter((i) => i.status === "published");
+  if (!db) {
+    return getMemoryStore()
+      .images.filter((i) => i.status === "published")
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
   return db
     .collection<ShoppableImage>("shoppableImages")
     .find({ status: "published" })
@@ -714,7 +718,8 @@ export async function reframeShoppableImage(
     return { x: Math.min(1, Math.max(0, p.x)), y: Math.min(1, Math.max(0, p.y)) };
   };
 
-  await updateShoppableImage(id, replacement);
+  // Saved shop framings were relative to the old photo; fall back to auto-framing.
+  await updateShoppableImage(id, { ...replacement, categoryCrops: {} });
   await Promise.all([
     ...hotspots.map((h) =>
       upsertHotspot({
@@ -763,4 +768,40 @@ export async function deleteImageIfUnused(url: string | undefined): Promise<void
   if (inUse) return;
   if ((await getSiteSettings()).avatarUrl === url) return;
   await deleteStoredImage(url);
+}
+
+export interface ShopEntry {
+  image: ShoppableImage;
+  category: Category;
+  crop: CropRect;
+  /** Active products in this look tagged with this category. */
+  hotspots: Hotspot[];
+}
+
+/**
+ * The shop grid: one card per (published look × category of its products),
+ * newest looks first and categories in their admin sort order. A look with a
+ * top and a bag in it becomes two cards, each framed on its own product.
+ */
+export async function listShopEntries({
+  page,
+  pageSize,
+}: {
+  page: number;
+  pageSize: number;
+}): Promise<Paginated<ShopEntry>> {
+  const [images, categories] = await Promise.all([listPublishedImages(), listCategories()]);
+  const hotspots = await listHotspotsForImages(images.map((i) => i._id));
+  const activeCategories = categories.filter((c) => c.isActive).sort((a, b) => a.sortOrder - b.sortOrder);
+
+  const entries: ShopEntry[] = [];
+  for (const image of images) {
+    const own = hotspots.filter((h) => h.shoppableImageId === image._id && h.isActive);
+    for (const category of activeCategories) {
+      const inCategory = own.filter((h) => (h.categoryIds ?? []).includes(category._id));
+      if (inCategory.length === 0) continue;
+      entries.push({ image, category, crop: shopCropFor(image, category._id, own), hotspots: inCategory });
+    }
+  }
+  return paginate(entries, page, pageSize);
 }
