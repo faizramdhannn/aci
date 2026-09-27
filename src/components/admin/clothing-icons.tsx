@@ -59,3 +59,13 @@ export function SkirtIcon(props: IconProps) {
     </Base>
   );
 }
+
+export function LipstickIcon(props: IconProps) {
+  return (
+    <Base {...props}>
+      <path d="M9 11V6l5-3v8" />
+      <path d="M7 11h9v3H7Z" />
+      <path d="M7.5 14h8l-.5 7H8Z" />
+    </Base>
+  );
+}

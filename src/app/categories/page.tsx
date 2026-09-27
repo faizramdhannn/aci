@@ -6,7 +6,7 @@ import type { Metadata } from "next";
 import { CategoryIcon } from "@/components/admin/category-icons";
 import { LookCard } from "@/components/storefront/look-card";
 import { Pagination } from "@/components/ui/pagination";
-import { listAnnotationsForImages, listCategories, listHotspotsForImages, listPublishedImagesPage } from "@/lib/data";
+import { listAnnotationsForImages, listCategories, listCategoriesWithProducts, listHotspotsForImages, listPublishedImagesPage } from "@/lib/data";
 import { getDictionary } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -29,8 +29,11 @@ export default async function CategoriesPage({
   const { category: activeCategoryId, page: pageParam } = await searchParams;
   const requestedPage = Math.max(1, Number(pageParam) || 1);
 
-  const [t, allCategories] = await Promise.all([getDictionary(), listCategories()]);
-  const categories = allCategories.filter((c) => c.isActive);
+  const [t, allCategories, categories] = await Promise.all([
+    getDictionary(),
+    listCategories(),
+    listCategoriesWithProducts(),
+  ]);
   const activeCategory = activeCategoryId ? categories.find((c) => c._id === activeCategoryId) : undefined;
 
   const { items: images, page, totalPages } = await listPublishedImagesPage({

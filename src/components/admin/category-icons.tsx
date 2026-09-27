@@ -27,7 +27,7 @@ import {
   SportShoe,
 } from "lucide-react";
 import type { ComponentType } from "react";
-import { DressIcon, HijabIcon, PantsIcon, SkirtIcon } from "@/components/admin/clothing-icons";
+import { DressIcon, HijabIcon, LipstickIcon, PantsIcon, SkirtIcon } from "@/components/admin/clothing-icons";
 
 /** Curated icon set for category logos: lucide-react plus a few hand-drawn garments lucide lacks. */
 export const CATEGORY_ICONS: Record<string, ComponentType<{ className?: string; size?: number }>> = {
@@ -36,6 +36,7 @@ export const CATEGORY_ICONS: Record<string, ComponentType<{ className?: string; 
   hijab: HijabIcon,
   dress: DressIcon,
   skirt: SkirtIcon,
+  cosmetic: LipstickIcon,
   handbag: Handbag,
   "sport-shoe": SportShoe,
   "shopping-bag": ShoppingBag,

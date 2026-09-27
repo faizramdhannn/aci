@@ -805,3 +805,11 @@ export async function listShopEntries({
   }
   return paginate(entries, page, pageSize);
 }
+
+/** Active categories that have at least one active product on a published look. */
+export async function listCategoriesWithProducts(): Promise<Category[]> {
+  const [images, categories] = await Promise.all([listPublishedImages(), listCategories()]);
+  const hotspots = await listHotspotsForImages(images.map((i) => i._id));
+  const used = new Set(hotspots.filter((h) => h.isActive).flatMap((h) => h.categoryIds ?? []));
+  return categories.filter((c) => c.isActive && used.has(c._id));
+}

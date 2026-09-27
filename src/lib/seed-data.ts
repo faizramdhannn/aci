@@ -15,6 +15,7 @@ export const seedCategories: Category[] = [
   { _id: "cat-shoes", name: "Shoes", slug: "shoes", sortOrder: 3, isActive: true },
   { _id: "cat-bags", name: "Bags", slug: "bags", sortOrder: 4, isActive: true },
   { _id: "cat-lifestyle", name: "Lifestyle", slug: "lifestyle", sortOrder: 5, isActive: true },
+  { _id: "cat-cosmetic", name: "Cosmetic", slug: "cosmetic", icon: "cosmetic", sortOrder: 6, isActive: true },
 ];
 
 export const seedShoppableImages: ShoppableImage[] = [
