@@ -18,6 +18,8 @@ export function StoreSettingsForm({ initial }: { initial: StoreSettings }) {
   const [values, setValues] = useState(initial);
   const [saving, setSaving] = useState(false);
   const banners = values.heroBanners ?? [];
+  const faq = values.faq ?? [];
+  const setFaq = (next: { q: string; a: string }[]) => setValues((v) => ({ ...v, faq: next }));
   const setBanners = (next: HeroBanner[]) => setValues((v) => ({ ...v, heroBanners: next }));
   const updateBanner = (i: number, patch: Partial<HeroBanner>) =>
     setBanners(banners.map((b, j) => (j === i ? { ...b, ...patch } : b)));
@@ -27,7 +29,9 @@ export function StoreSettingsForm({ initial }: { initial: StoreSettings }) {
     setBanners(next);
   };
 
-  const field = (key: "storeName" | "tagline" | "whatsappNumber" | "paymentInfo" | "instagramUrl") => ({
+  const field = (
+    key: "storeName" | "tagline" | "whatsappNumber" | "paymentInfo" | "instagramUrl" | "howToOrder" | "shippingPolicy" | "returnPolicy"
+  ) => ({
     value: values[key] ?? "",
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setValues((v) => ({ ...v, [key]: e.target.value })),
@@ -43,6 +47,7 @@ export function StoreSettingsForm({ initial }: { initial: StoreSettings }) {
         ...values,
         // Slides without a photo yet aren't saved.
         heroBanners: banners.filter((b) => b.image),
+        faq: faq.filter((f) => f.q.trim() && f.a.trim()),
         heroImage: undefined,
         heroTitle: undefined,
         heroSubtitle: undefined,
@@ -175,6 +180,51 @@ export function StoreSettingsForm({ initial }: { initial: StoreSettings }) {
               </div>
             </div>
           ))}
+        </div>
+      </Card>
+      <Card title={s.infoPages}>
+        <p className="-mt-2 mb-4 text-xs text-brown-soft">{s.infoHint}</p>
+        <div className="space-y-4">
+          {(["howToOrder", "shippingPolicy", "returnPolicy"] as const).map((key) => (
+            <label key={key} className="block text-sm">
+              <span className="mb-1 block text-xs text-brown-soft">{s[key]}</span>
+              <textarea rows={4} maxLength={4000} {...field(key)} className={adminInput} />
+            </label>
+          ))}
+          <div>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="text-xs text-brown-soft">{s.faq}</span>
+              <button type="button" onClick={() => setFaq([...faq, { q: "", a: "" }])} className="text-xs font-medium text-orange hover:underline">
+                + {s.addFaq}
+              </button>
+            </div>
+            <div className="space-y-3">
+              {faq.map((item, i) => (
+                <div key={i} className="space-y-2 rounded-xl border border-brown/10 p-3">
+                  <input
+                    maxLength={200}
+                    placeholder={s.question}
+                    aria-label={s.question}
+                    value={item.q}
+                    onChange={(e) => setFaq(faq.map((f, j) => (j === i ? { ...f, q: e.target.value } : f)))}
+                    className={adminInput}
+                  />
+                  <textarea
+                    rows={2}
+                    maxLength={2000}
+                    placeholder={s.answer}
+                    aria-label={s.answer}
+                    value={item.a}
+                    onChange={(e) => setFaq(faq.map((f, j) => (j === i ? { ...f, a: e.target.value } : f)))}
+                    className={adminInput}
+                  />
+                  <button type="button" onClick={() => setFaq(faq.filter((_, j) => j !== i))} className="text-xs text-brown-soft hover:text-red-500">
+                    {s.removeFaq}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </Card>
       <button type="submit" disabled={saving} className={primaryButton}>

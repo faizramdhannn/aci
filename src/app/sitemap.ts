@@ -9,7 +9,7 @@ export const dynamic = "force-dynamic";
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const [images, products] = await Promise.all([listPublishedImages(), listStoreProducts({ activeOnly: true })]);
 
-  const staticRoutes: MetadataRoute.Sitemap = ["", "/outfit", "/narras", "/shop", "/categories", "/privacy", "/disclosure"].map((path) => ({
+  const staticRoutes: MetadataRoute.Sitemap = ["", "/outfit", "/narras", "/narras/info", "/shop", "/categories", "/privacy", "/disclosure"].map((path) => ({
     url: `${siteUrl}${path}`,
     changeFrequency: "daily",
     priority: path === "" ? 1 : 0.6,

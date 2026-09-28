@@ -66,6 +66,13 @@ export const storeSettingsSchema = z.object({
   tagline: z.string().trim().max(160).optional(),
   paymentInfo: z.string().trim().max(1000).optional(),
   instagramUrl: z.union([z.literal(""), z.string().url()]).optional(),
+  howToOrder: z.string().trim().max(4000).optional(),
+  shippingPolicy: z.string().trim().max(4000).optional(),
+  returnPolicy: z.string().trim().max(4000).optional(),
+  faq: z
+    .array(z.object({ q: z.string().trim().min(1).max(200), a: z.string().trim().min(1).max(2000) }))
+    .max(30)
+    .optional(),
   heroBanners: z
     .array(
       z.object({
