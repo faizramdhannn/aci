@@ -29,3 +29,14 @@ describe("filterProducts", () => {
     expect(new Set(colourOptions(products)).size).toBe(colourOptions(products).length);
   });
 });
+
+import { relatedProducts } from "@/lib/store/catalog";
+
+describe("relatedProducts", () => {
+  it("excludes the product itself and prefers the same collection", () => {
+    const extra = { ...products[0], _id: "prod-x", title: "Pashmina Lain", collectionIds: ["col-pashmina"], createdAt: "2026-01-01T00:00:00.000Z" };
+    const related = relatedProducts(products[0], [...products, extra]);
+    expect(related[0]._id).toBe("prod-x");
+    expect(related.map((p) => p._id)).not.toContain(products[0]._id);
+  });
+});

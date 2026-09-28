@@ -4,7 +4,10 @@ import { ProductGallery } from "@/components/store/product-gallery";
 import { AddToCart } from "@/components/store/add-to-cart";
 import { CommentsSection } from "@/components/comments/comments-section";
 import { ReviewsSection } from "@/components/store/reviews-section";
-import { getStoreProductBySlug, getStoreSettings } from "@/lib/store/data";
+import { getStoreProductBySlug, getStoreSettings, listStoreProducts } from "@/lib/store/data";
+import { relatedProducts } from "@/lib/store/catalog";
+import { ProductCard } from "@/components/store/product-card";
+import { listReviews, ratingsByProduct } from "@/lib/store/reviews";
 import { formatRupiah } from "@/lib/store/money";
 import { getStoreDictionary } from "@/lib/i18n/server";
 
@@ -25,6 +28,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
   const { slug } = await params;
   const [product, t] = await Promise.all([getStoreProductBySlug(slug), getStoreDictionary()]);
   if (!product || product.status !== "active") notFound();
+  const [all, reviews] = await Promise.all([listStoreProducts({ activeOnly: true }), listReviews({ status: "active" })]);
+  const related = relatedProducts(product, all);
+  const ratings = ratingsByProduct(reviews);
 
   const onSale = Boolean(product.compareAtPrice && product.compareAtPrice > product.price);
 
@@ -49,6 +55,18 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
           <p className="mt-6 text-xs text-brown-soft">{t.store.shippingNote}</p>
         </div>
       </div>
+      {related.length > 0 && (
+        <section className="mt-14" aria-labelledby="related-title">
+          <h2 id="related-title" className="mb-4 text-lg font-semibold text-brown">
+            {t.store.related}
+          </h2>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-4">
+            {related.map((p) => (
+              <ProductCard key={p._id} product={p} t={t} rating={ratings[p._id]} />
+            ))}
+          </div>
+        </section>
+      )}
       <div className="max-w-2xl">
         <ReviewsSection productId={product._id} />
         <CommentsSection target="product" targetId={product._id} />

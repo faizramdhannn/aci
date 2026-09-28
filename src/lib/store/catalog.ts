@@ -50,3 +50,14 @@ export function filterProducts(products: StoreProduct[], query: ProductQuery): S
     return b.createdAt.localeCompare(a.createdAt);
   });
 }
+
+/** Up to `limit` other active products: same collection first, then in-stock, then newest. */
+export function relatedProducts(product: StoreProduct, all: StoreProduct[], limit = 4): StoreProduct[] {
+  const mine = new Set(product.collectionIds ?? []);
+  const score = (p: StoreProduct) =>
+    ((p.collectionIds ?? []).some((c) => mine.has(c)) ? 2 : 0) + (p.variants.some((v) => v.stock > 0) ? 1 : 0);
+  return all
+    .filter((p) => p._id !== product._id && p.status === "active")
+    .sort((a, b) => score(b) - score(a) || b.createdAt.localeCompare(a.createdAt))
+    .slice(0, limit);
+}

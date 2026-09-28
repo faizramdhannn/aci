@@ -4,6 +4,7 @@ import { useState } from "react";
 import type { Category, Hotspot } from "@/types";
 import { CategoryChipPicker } from "@/components/admin/category-chip-picker";
 import { useAdminDictionary } from "@/components/i18n/use-admin-dictionary";
+import { OwnProductPicker } from "@/components/editor/own-product-picker";
 
 const MARKER_COLORS = ["#5A3D2B", "#E5781E", "#FBBA00", "#2B1E17"];
 
@@ -77,6 +78,14 @@ export function AddProductModal({
             ✕
           </button>
         </div>
+
+        <OwnProductPicker
+          onPick={(p) => {
+            setTitle(p.title);
+            setAffiliateUrl(p.url);
+            setPrice(String(p.price));
+          }}
+        />
 
         <label className="block">
           <span className="mb-1 block text-xs text-brown-soft">{t.editor.productName}</span>

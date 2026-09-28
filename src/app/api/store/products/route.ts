@@ -2,7 +2,14 @@ import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { adminSession } from "@/lib/auth";
 import { productSchema } from "@/lib/store/schemas";
-import { createStoreProduct, generateProductSlug } from "@/lib/store/data";
+import { createStoreProduct, generateProductSlug, listStoreProducts } from "@/lib/store/data";
+
+/** Admin: active products, for linking one from a Spill Outfit look. */
+export async function GET() {
+  if (!(await adminSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const products = await listStoreProducts({ activeOnly: true });
+  return NextResponse.json(products.map((p) => ({ _id: p._id, title: p.title, slug: p.slug, price: p.price })));
+}
 
 export async function POST(request: Request) {
   const session = await adminSession();

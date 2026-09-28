@@ -23,7 +23,10 @@ const HOSTS: [RegExp, string][] = [
 export function storeNameFor(hotspot: Pick<Hotspot, "marketplace" | "affiliateUrl">): string | null {
   if (hotspot.marketplace && LABELS[hotspot.marketplace]) return LABELS[hotspot.marketplace];
   try {
-    const host = new URL(hotspot.affiliateUrl).hostname;
+    const url = new URL(hotspot.affiliateUrl);
+    // A product from our own store (linked from the editor's by.narras picker).
+    if (url.pathname.startsWith("/narras/p/")) return "by.narras";
+    const host = url.hostname;
     return HOSTS.find(([re]) => re.test(host))?.[1] ?? null;
   } catch {
     return null;

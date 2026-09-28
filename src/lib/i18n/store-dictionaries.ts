@@ -399,6 +399,8 @@ const en = {
       moveDown: "Move right",
       removePhoto: "Remove photo",
       view: "View in store ↗",
+      linkFromStore: "Or link a by.narras product",
+      chooseProduct: "— choose a product —",
     },
     customers: {
       title: "Customers",
@@ -854,6 +856,8 @@ const id: StoreDictionary = {
       moveDown: "Geser ke kanan",
       removePhoto: "Hapus foto",
       view: "Lihat di toko ↗",
+      linkFromStore: "Atau tautkan produk by.narras",
+      chooseProduct: "— pilih produk —",
     },
     customers: {
       title: "Pelanggan",
