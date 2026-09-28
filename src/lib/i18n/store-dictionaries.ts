@@ -3,6 +3,7 @@ import type { OrderStatus } from "@/types/store";
 
 /** Strings for the hub page, the by.narras storefront and its admin. */
 const en = {
+  adminBar: { signedIn: "Admin ·", open: "Open dashboard" },
   switcher: { label: "Switch site", current: "You're here", home: "All sites" },
   hub: {
     title: "Choose where to go",
@@ -460,6 +461,7 @@ const en = {
 export type StoreDictionary = typeof en;
 
 const id: StoreDictionary = {
+  adminBar: { signedIn: "Admin ·", open: "Buka dashboard" },
   switcher: { label: "Pindah situs", current: "Sedang dibuka", home: "Semua situs" },
   hub: {
     title: "Mau ke mana hari ini?",

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SplashGate } from "@/components/storefront/splash-gate";
+import { AdminBar } from "@/components/navigation/admin-bar";
+import { auth, isAdminSession } from "@/lib/auth";
 import { SPLASH_COOKIES, type SplashBrand } from "@/lib/splash";
 import { getStoreSettings } from "@/lib/store/data";
 import { cookies } from "next/headers";
@@ -32,11 +34,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [locale, cookieStore, site, store] = await Promise.all([
+  const [locale, cookieStore, site, store, session] = await Promise.all([
     getLocale(),
     cookies(),
     getSiteSettings(),
     getStoreSettings(),
+    auth(),
   ]);
   const seen = (Object.keys(SPLASH_COOKIES) as SplashBrand[]).filter((b) => cookieStore.get(SPLASH_COOKIES[b]));
 
@@ -44,6 +47,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
     <html lang={locale} className={`${fontVariables} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-cream text-brown" suppressHydrationWarning>
         <LocaleProvider locale={locale}>
+          {isAdminSession(session) && <AdminBar email={session!.user?.email ?? ""} />}
           <SplashGate
             words={{ outfit: site.siteName.toLowerCase(), store: store.storeName }}
             seen={seen}

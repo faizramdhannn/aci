@@ -3,12 +3,14 @@ import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { allowRateLimitedHit } from "@/lib/rate-limit";
+import { isSuperadminEmail } from "@/config/admins";
 
 /**
- * One NextAuth instance, two kinds of account:
- * - admin: the single owner, configured via ADMIN_EMAIL / ADMIN_PASSWORD_HASH;
- * - customer: by.narras shoppers, stored in MongoDB (email + password, or Google).
- * Every session carries a role, and admin-only code checks it with adminSession().
+ * One set of accounts (by.narras customers in MongoDB: email + password, or
+ * Google). Accounts whose email is in SUPERADMIN_EMAILS get the "admin" role
+ * and can use /admin; everyone else is a customer. The role is recomputed
+ * from the email on every request, so changing the list takes effect
+ * without logging out. Admin-only code checks it with adminSession().
  */
 
 export type Role = "admin" | "customer";
@@ -29,31 +31,8 @@ function clientIp(request: Request | undefined) {
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: "jwt" },
-  pages: { signIn: "/admin-login" },
+  pages: { signIn: "/narras/login" },
   providers: [
-    // Kept as the default "credentials" id so the admin login form is unchanged.
-    Credentials({
-      id: "credentials",
-      credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
-      },
-      async authorize(credentials, request) {
-        const email = credentials?.email as string | undefined;
-        const password = credentials?.password as string | undefined;
-        const adminEmail = process.env.ADMIN_EMAIL;
-        const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
-
-        if (!email || !password || !adminEmail || !adminPasswordHash) return null;
-        if (!(await allowRateLimitedHit(clientIp(request), { scope: "login", max: 10 }))) return null;
-        if (email.toLowerCase() !== adminEmail.toLowerCase()) return null;
-
-        const valid = await bcrypt.compare(password, adminPasswordHash);
-        if (!valid) return null;
-
-        return { id: "seed-owner", email: adminEmail, name: "Admin", role: "admin" } as never;
-      },
-    }),
     Credentials({
       id: "customer",
       credentials: {
@@ -72,7 +51,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!customer?.passwordHash) return null;
         if (!(await bcrypt.compare(password, customer.passwordHash))) return null;
 
-        return { id: customer._id, email: customer.email, name: customer.name, role: "customer" } as never;
+        return { id: customer._id, email: customer.email, name: customer.name } as never;
       },
     }),
     ...(googleEnabled ? [Google] : []),
@@ -86,14 +65,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: profile.name ?? profile.email.split("@")[0],
           googleId: account.providerAccountId,
         });
-        token.role = "customer";
         token.customerId = customer._id;
         token.name = customer.name;
+        token.email = customer.email;
       } else if (user) {
-        const role = (user as { role?: Role }).role;
-        token.role = role;
-        if (role === "customer") token.customerId = user.id;
+        token.customerId = user.id;
       }
+      token.role = isSuperadminEmail(token.email) ? "admin" : "customer";
       return token;
     },
     async session({ session, token }) {
@@ -104,12 +82,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
 });
 
-/** Sessions from before roles existed have no role; the owner's email still identifies them. */
 export function isAdminSession(session: Session | null | undefined): boolean {
-  if (!session) return false;
-  if (session.role) return session.role === "admin";
-  const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase();
-  return Boolean(adminEmail && session.user?.email?.toLowerCase() === adminEmail);
+  return Boolean(session && session.role === "admin" && isSuperadminEmail(session.user?.email));
 }
 
 /** The session if it belongs to the admin, else null. Use this for everything under /admin and admin APIs. */
@@ -118,8 +92,8 @@ export async function adminSession(): Promise<Session | null> {
   return isAdminSession(session) ? session : null;
 }
 
-/** The signed-in by.narras customer's id, or null. */
+/** The signed-in account's id (customer or superadmin — admins can shop too), or null. */
 export async function customerId(): Promise<string | null> {
   const session = await auth();
-  return session?.role === "customer" && session.customerId ? session.customerId : null;
+  return session?.customerId ?? null;
 }

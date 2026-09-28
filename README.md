@@ -33,12 +33,7 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000). The storefront and `/go/[hotspotId]` redirects work immediately against demo data — no `.env.local` needed. Changes made in the admin editor (new hotspots, new looks, publish/unpublish) persist in memory for as long as the dev server keeps running, then reset on restart.
 
-This checkout already includes a working `.env.local` with a demo admin login, so `/admin` works out of the box too:
-
-- **Email:** `admin@aci.local`
-- **Password:** `aci-admin-2026`
-
-`.env.local` is gitignored — replace it with your own credentials before you push this anywhere or treat it as more than a local demo. See **Full local setup** below for how.
+**Admin access** comes from store accounts: register at `/narras/register` with an email listed in `src/config/admins.ts` (or the `SUPERADMIN_EMAILS` env var), then open `/admin`. There is no separate admin password.
 
 ## Full local setup (with a real database + login)
 
@@ -48,19 +43,7 @@ This checkout already includes a working `.env.local` with a demo admin login, s
    cp .env.example .env.local
    ```
 
-2. **Admin login.** Generate a bcrypt hash for whatever password you want:
-
-   ```bash
-   node -e "console.log(require('bcryptjs').hashSync('your-password', 10))"
-   ```
-
-   Put it in `.env.local` as `ADMIN_PASSWORD_HASH`, and set `ADMIN_EMAIL` to whatever email you want to sign in with.
-
-   **Important gotcha:** Next.js expands `$` in `.env*` files to reference other variables (e.g. `$FOO`). A bcrypt hash is full of `$` (`$2b$10$...`), so paste it with every `$` escaped as `\$`, otherwise Next.js silently mangles the value and login fails with no useful error. Example:
-
-   ```
-   ADMIN_PASSWORD_HASH=\$2b\$10\$1vmNlD7zgMY1nzR5SdDlw.Woi5td0ndnxfj5FSASuT0mgYtYSjgVy
-   ```
+2. **Admin access.** Superadmins are store accounts whose email is in `src/config/admins.ts` or in `SUPERADMIN_EMAILS` (comma-separated). Sign up at `/narras/register` (or with Google) using that email, then go to `/admin`.
 
 3. **Auth secret**, required by NextAuth to sign session tokens:
 

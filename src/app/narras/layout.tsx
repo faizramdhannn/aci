@@ -6,6 +6,7 @@ import { CartLink } from "@/components/store/cart-link";
 import { SiteSwitcher } from "@/components/navigation/site-switcher";
 import { HUB_NAME } from "@/config/site";
 import { getStoreSettings } from "@/lib/store/data";
+import { getStoreDictionary } from "@/lib/i18n/server";
 import { customerId } from "@/lib/auth";
 import { getCustomerById } from "@/lib/store/customers";
 import { CartProvider } from "@/lib/store/cart";
@@ -17,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [settings, id] = await Promise.all([getStoreSettings(), customerId()]);
+  const [settings, id, t] = await Promise.all([getStoreSettings(), customerId(), getStoreDictionary()]);
   const customer = id ? await getCustomerById(id) : null;
   return (
     // Keyed by account so logging in/out starts from that account's saved cart.
@@ -45,6 +46,12 @@ export default async function StoreLayout({ children }: { children: React.ReactN
                 Instagram
               </a>
             )}
+            <Link href="/narras/info" className="hover:text-orange">
+              {t.store.info}
+            </Link>
+            <Link href="/narras/info#faq" className="hover:text-orange">
+              {t.store.faq}
+            </Link>
             <Link href="/" className="hover:text-orange">
               {HUB_NAME}
             </Link>

@@ -230,6 +230,8 @@ const en = {
     failed: "Couldn't save settings.",
   },
   login: {
+    notAdmin: "You're signed in as {email}, which doesn't have admin access.",
+    switchAccount: "Log out & switch account",
     title: "Sign in to manage your looks",
     email: "Email",
     password: "Password",
@@ -468,6 +470,8 @@ const id: AdminDictionary = {
     failed: "Gagal menyimpan pengaturan.",
   },
   login: {
+    notAdmin: "Kamu masuk sebagai {email}, yang tidak punya akses admin.",
+    switchAccount: "Keluar & ganti akun",
     title: "Masuk untuk mengelola look kamu",
     email: "Email",
     password: "Kata sandi",
