@@ -23,7 +23,7 @@ export function ProductCard({
   const onSale = Boolean(product.compareAtPrice && product.compareAtPrice > product.price);
   return (
     <Link href={`/narras/p/${product.slug}`} className="group block">
-      <div className="relative aspect-[4/5] overflow-hidden rounded-2xl bg-brown/5">
+      <div className="relative aspect-square overflow-hidden rounded-2xl bg-brown/5">
         {product.images[0] && (
           <Image
             src={product.images[0]}

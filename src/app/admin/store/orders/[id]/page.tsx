@@ -49,7 +49,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
             <ul className="divide-y divide-brown/10">
               {order.items.map((item) => (
                 <li key={`${item.productId}:${item.variantId}`} className="flex items-center gap-3 py-2.5">
-                  <div className="relative h-14 w-11 shrink-0 overflow-hidden rounded-md bg-brown/5">
+                  <div className="relative h-11 w-11 shrink-0 overflow-hidden rounded-md bg-brown/5">
                     {item.image && <Image src={item.image} alt="" fill sizes="44px" className="object-cover" />}
                   </div>
                   <div className="min-w-0 flex-1 text-sm">

@@ -187,7 +187,7 @@ export function CartView({
           const unavailable = !loading && (!product || !variant || variant.stock === 0);
           return (
             <li key={`${line.productId}:${line.variantId}`} className="flex gap-4 py-4">
-              <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-brown/5">
+              <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-brown/5">
                 {product?.image && <Image src={product.image} alt="" fill sizes="80px" className="object-cover" />}
               </div>
               <div className="min-w-0 flex-1">

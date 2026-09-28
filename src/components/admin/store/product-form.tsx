@@ -102,7 +102,7 @@ export function ProductForm({ product, collections }: { product?: StoreProduct; 
           {draft.images.length > 0 && (
             <ul className="mb-4 grid grid-cols-3 gap-3 sm:grid-cols-4">
               {draft.images.map((src, i) => (
-                <li key={src} className={`group relative aspect-[4/5] overflow-hidden rounded-xl border border-brown/10 bg-brown/5 ${i === 0 ? "col-span-2 row-span-2" : ""}`}>
+                <li key={src} className={`group relative aspect-square overflow-hidden rounded-xl border border-brown/10 bg-brown/5 ${i === 0 ? "col-span-2 row-span-2" : ""}`}>
                   <Image src={src} alt="" fill sizes="200px" className="object-cover" />
                   <div className="absolute inset-x-1 bottom-1 flex justify-between gap-1">
                     <span className="flex gap-1">
@@ -141,7 +141,7 @@ export function ProductForm({ product, collections }: { product?: StoreProduct; 
           {draft.images.length < 10 && (
             <ImageUploadField
               value={null}
-              defaultRatio={4 / 5}
+              defaultRatio={1}
               onChange={(img) => setDraft((d) => ({ ...d, images: [...d.images, img.url] }))}
             />
           )}

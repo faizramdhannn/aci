@@ -120,7 +120,7 @@ export default async function StoreHomePage() {
               {lowStock.map(({ product, variant }) => (
                 <li key={`${product._id}:${variant.id}`}>
                   <Link href={`/admin/store/products/${product._id}`} className="flex items-center gap-3 hover:opacity-80">
-                    <div className="relative h-10 w-8 shrink-0 overflow-hidden rounded-md bg-brown/5">
+                    <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md bg-brown/5">
                       {product.images[0] && <Image src={product.images[0]} alt="" fill sizes="32px" className="object-cover" />}
                     </div>
                     <div className="min-w-0 flex-1 text-sm">

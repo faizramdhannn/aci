@@ -8,7 +8,7 @@ export function ProductGallery({ images, title }: { images: string[]; title: str
   const current = images[active] ?? images[0];
   return (
     <div>
-      <div className="relative aspect-[4/5] overflow-hidden rounded-3xl bg-brown/5">
+      <div className="relative aspect-square overflow-hidden rounded-3xl bg-brown/5">
         {current && (
           <Image src={current} alt={title} fill priority sizes="(min-width: 768px) 50vw, 100vw" className="object-cover" />
         )}
@@ -22,7 +22,7 @@ export function ProductGallery({ images, title }: { images: string[]; title: str
               onClick={() => setActive(i)}
               aria-label={`${title} ${i + 1}`}
               aria-current={i === active}
-              className={`relative h-20 w-16 shrink-0 overflow-hidden rounded-xl border-2 ${
+              className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-xl border-2 ${
                 i === active ? "border-orange" : "border-transparent opacity-70 hover:opacity-100"
               }`}
             >

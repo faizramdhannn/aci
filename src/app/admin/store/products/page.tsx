@@ -48,7 +48,7 @@ export default async function ProductsPage() {
                     <tr key={product._id} className="relative hover:bg-brown/5">
                       <td className="px-4 py-2.5">
                         <Link href={`/admin/store/products/${product._id}`} className="flex items-center gap-3 after:absolute after:inset-0">
-                          <span className="relative h-12 w-10 shrink-0 overflow-hidden rounded-md border border-brown/10 bg-brown/5">
+                          <span className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-brown/10 bg-brown/5">
                             {product.images[0] && <Image src={product.images[0]} alt="" fill sizes="40px" className="object-cover" />}
                           </span>
                           <span className="font-medium text-brown">{product.title}</span>
