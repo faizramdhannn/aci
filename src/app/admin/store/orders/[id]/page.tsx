@@ -62,6 +62,14 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
                 <dt className="text-brown-soft">{t.admin.orders.subtotal}</dt>
                 <dd className="tabular-nums text-brown">{formatRupiah(order.subtotal)}</dd>
               </div>
+              {order.discount ? (
+                <div className="flex justify-between">
+                  <dt className="text-brown-soft">
+                    {t.store.discount} ({order.voucherCode})
+                  </dt>
+                  <dd className="tabular-nums text-brown">−{formatRupiah(order.discount)}</dd>
+                </div>
+              ) : null}
               <div className="flex justify-between">
                 <dt className="text-brown-soft">{t.admin.orders.shipping}</dt>
                 <dd className="tabular-nums text-brown">

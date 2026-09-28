@@ -8,6 +8,7 @@ import { Minus, Plus } from "lucide-react";
 import type { CustomerAddress, StoreVariant } from "@/types/store";
 import { useCartContext, type CartLine } from "@/lib/store/cart";
 import { formatRupiah } from "@/lib/store/money";
+import { VoucherField, type AppliedVoucher } from "@/components/store/voucher-field";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
 
 interface CartProduct {
@@ -41,6 +42,7 @@ export function CartView({
     defaultAddressId ?? addresses[0]?.id ?? "new"
   );
   const [saveNew, setSaveNew] = useState(true);
+  const [voucher, setVoucher] = useState<AppliedVoucher | null>(null);
   const [products, setProducts] = useState<CartProduct[] | null>(null);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -74,6 +76,9 @@ export function CartView({
   const valid = rows.filter((r) => r.product && r.variant && r.variant.stock >= r.line.qty);
   const hasProblems = !loading && valid.length !== rows.length;
   const subtotal = valid.reduce((sum, r) => sum + r.product!.price * r.line.qty, 0);
+  // The preview discount was computed for the subtotal at the time; drop it if the cart changed since.
+  const [voucherFor, setVoucherFor] = useState(0);
+  const activeVoucher = voucher && voucherFor === subtotal ? voucher : null;
 
   /** Drops lines that no longer exist and caps quantities at current stock. */
   function fixCart() {
@@ -123,6 +128,7 @@ export function CartView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lines: valid.map((r) => r.line),
+          voucherCode: activeVoucher?.code,
           customer: {
             name: chosen.recipient,
             phone: chosen.phone,
@@ -134,6 +140,13 @@ export function CartView({
         }),
       });
       const data = await res.json().catch(() => ({}));
+      if (!res.ok && data.error === "voucher") {
+        const key = data.voucherError as keyof typeof t.store.voucherErrors;
+        setError(t.store.voucherErrors[key] ?? t.store.voucherErrors.generic);
+        setVoucher(null);
+        setPlacing(false);
+        return;
+      }
       if (!res.ok) {
         const code = (data.error as ErrorCode) in t.store.errors ? (data.error as ErrorCode) : "generic";
         setError(t.store.errors[code]);
@@ -231,8 +244,34 @@ export function CartView({
       <form onSubmit={onSubmit} className="h-fit space-y-3 rounded-3xl border border-brown/10 bg-surface p-5">
         <div className="flex items-center justify-between text-sm">
           <span className="text-brown-soft">{t.store.subtotal}</span>
-          <span className="text-lg font-semibold text-brown">{loading ? "…" : formatRupiah(subtotal)}</span>
+          <span className={activeVoucher ? "text-sm text-brown" : "text-lg font-semibold text-brown"}>
+            {loading ? "…" : formatRupiah(subtotal)}
+          </span>
         </div>
+        {activeVoucher && (
+          <>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-brown-soft">
+                {t.store.discount} ({activeVoucher.code})
+              </span>
+              <span className="text-brown">−{formatRupiah(activeVoucher.discount)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-brown-soft">{t.store.total}</span>
+              <span className="text-lg font-semibold text-brown">{formatRupiah(subtotal - activeVoucher.discount)}</span>
+            </div>
+          </>
+        )}
+        {!loading && valid.length > 0 && (
+          <VoucherField
+            subtotal={subtotal}
+            applied={activeVoucher}
+            onChange={(v) => {
+              setVoucher(v);
+              setVoucherFor(subtotal);
+            }}
+          />
+        )}
         <p className="text-xs text-brown-soft">{t.store.shippingNote}</p>
 
         <h2 className="pt-3 text-sm font-semibold text-brown">{t.store.checkoutTitle}</h2>

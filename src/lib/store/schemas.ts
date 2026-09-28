@@ -29,6 +29,7 @@ export const orderPatchSchema = z.object({
 });
 
 export const checkoutSchema = z.object({
+  voucherCode: z.string().trim().max(30).optional(),
   lines: z
     .array(
       z.object({

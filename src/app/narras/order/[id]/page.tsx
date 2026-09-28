@@ -92,6 +92,14 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
           <dt className="text-brown-soft">{t.store.subtotal}</dt>
           <dd className="text-brown">{formatRupiah(order.subtotal)}</dd>
         </div>
+        {order.discount ? (
+          <div className="flex justify-between">
+            <dt className="text-brown-soft">
+              {t.store.discount} ({order.voucherCode})
+            </dt>
+            <dd className="text-brown">−{formatRupiah(order.discount)}</dd>
+          </div>
+        ) : null}
         <div className="flex justify-between">
           <dt className="text-brown-soft">{t.store.shipping}</dt>
           <dd className="text-brown">

@@ -4,6 +4,8 @@ import { getMemoryStore } from "@/lib/memory-store";
 import { deleteStoredImage } from "@/lib/storage";
 import { toWhatsappDigits } from "@/lib/store/whatsapp";
 import { deleteCommentsFor } from "@/lib/comments";
+import { claimVoucher, getVoucherByCode, releaseVoucher } from "@/lib/store/vouchers";
+import { voucherDiscount, voucherProblem } from "@/lib/store/voucher-rules";
 import type {
   HubSettings,
   OrderCustomer,
@@ -180,8 +182,8 @@ async function reserveAll(lines: StockLine[]): Promise<StockLine | null> {
 
 export class OrderError extends Error {
   constructor(
-    public code: "empty" | "unavailable" | "out_of_stock",
-    public detail?: { productId: string; variantId: string }
+    public code: "empty" | "unavailable" | "out_of_stock" | "voucher",
+    public detail?: { productId?: string; variantId?: string; voucherError?: string }
   ) {
     super(code);
   }
@@ -210,6 +212,7 @@ export async function placeOrder(input: {
   lines: StockLine[];
   customer: OrderCustomer;
   customerId?: string;
+  voucherCode?: string;
 }): Promise<StoreOrder> {
   // Merge duplicate lines for the same variant.
   const merged = new Map<string, StockLine>();
@@ -238,17 +241,35 @@ export async function placeOrder(input: {
     });
   }
 
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+
+  // Check the voucher before touching stock; claim its use only once stock is secured.
+  const voucher = input.voucherCode ? await getVoucherByCode(input.voucherCode) : null;
+  if (input.voucherCode) {
+    const problem = voucher ? voucherProblem(voucher, subtotal) : "not_found";
+    if (problem) throw new OrderError("voucher", { voucherError: problem });
+  }
+
   const short = await reserveAll(lines);
   if (short) throw new OrderError("out_of_stock", short);
 
+  let discount = 0;
+  if (voucher) {
+    if (!(await claimVoucher(voucher._id))) {
+      await Promise.all(lines.map(returnStock));
+      throw new OrderError("voucher", { voucherError: "used_up" });
+    }
+    discount = voucherDiscount(voucher, subtotal);
+  }
+
   const now = new Date().toISOString();
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
   const order: StoreOrder = {
     _id: randomUUID(),
     number: await nextOrderNumber(),
     items,
     subtotal,
-    total: subtotal,
+    ...(voucher ? { voucherCode: voucher.code, discount } : {}),
+    total: subtotal - discount,
     customer: input.customer,
     ...(input.customerId ? { customerId: input.customerId } : {}),
     status: "pending",
@@ -306,9 +327,13 @@ export async function updateOrder(id: string, patch: OrderPatch): Promise<StoreO
   if (patch.status && patch.status !== order.status) {
     if (patch.status === "cancelled") {
       await Promise.all(lines.map(returnStock));
+      if (order.voucherCode) await releaseVoucher(order.voucherCode);
     } else if (order.status === "cancelled") {
       const short = await reserveAll(lines);
       if (short) throw new OrderError("out_of_stock", short);
+      // Best effort: re-count the voucher use; the discount itself stays as agreed.
+      const v = order.voucherCode ? await getVoucherByCode(order.voucherCode) : null;
+      if (v) await claimVoucher(v._id);
     }
   }
 
@@ -317,7 +342,7 @@ export async function updateOrder(id: string, patch: OrderPatch): Promise<StoreO
     ...order,
     ...patch,
     shippingCost,
-    total: order.subtotal + (shippingCost ?? 0),
+    total: order.subtotal - (order.discount ?? 0) + (shippingCost ?? 0),
     updatedAt: new Date().toISOString(),
   };
 
