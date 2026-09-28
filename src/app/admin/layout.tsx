@@ -52,7 +52,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex min-h-screen bg-cream">
-      <aside className="sticky top-0 hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-brown/10 px-5 py-6 md:flex">
+      <aside className="sticky top-0 hidden print:!hidden h-screen w-60 shrink-0 flex-col overflow-y-auto border-r border-brown/10 px-5 py-6 md:flex">
         <Link href="/" className="mb-8 flex items-center gap-2 font-display text-2xl text-orange">
           <Logo size={28} />
           {studio}
@@ -62,7 +62,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       </aside>
 
       <div className="min-w-0 flex-1">
-        <header className="border-b border-brown/10 px-4 py-3 md:hidden">
+        <header className="border-b border-brown/10 px-4 py-3 md:hidden print:hidden">
           <div className="mb-3 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-1.5 font-display text-lg text-orange">
               <Logo size={20} />
@@ -72,7 +72,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </div>
           <AdminNav groups={groups} variant="chips" />
         </header>
-        <main className="min-w-0 px-4 py-6 md:px-10 md:py-8">{children}</main>
+        <main className="min-w-0 px-4 py-6 md:px-10 md:py-8 print:p-0">{children}</main>
       </div>
     </div>
   );

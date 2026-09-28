@@ -1,7 +1,8 @@
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { Card, PageHeader, StatusBadge, formatDate } from "@/components/admin/store/ui";
+import Link from "next/link";
+import { Card, PageHeader, StatusBadge, formatDate, secondaryButton } from "@/components/admin/store/ui";
 import { OrderActions } from "@/components/admin/store/order-actions";
 import { getOrderById } from "@/lib/store/data";
 import { formatRupiah } from "@/lib/store/money";
@@ -26,6 +27,11 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
     <div className="max-w-5xl">
       <PageHeader
         back={{ href: "/admin/store/orders", label: t.admin.orders.back }}
+        actions={
+          <Link href={`/admin/store/labels?ids=${order._id}`} className={secondaryButton}>
+            {t.admin.labels.print}
+          </Link>
+        }
         title={
           <span className="flex flex-wrap items-center gap-3">
             {order.number}

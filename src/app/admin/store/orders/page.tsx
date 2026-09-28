@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
-import { Card, PageHeader, StatusBadge, formatDate } from "@/components/admin/store/ui";
+import { Card, PageHeader, StatusBadge, formatDate, secondaryButton } from "@/components/admin/store/ui";
 import { listOrders } from "@/lib/store/data";
 import { formatRupiah } from "@/lib/store/money";
 import { getLocale, getStoreDictionary } from "@/lib/i18n/server";
@@ -30,7 +30,19 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   return (
     <div className="max-w-5xl">
-      <PageHeader title={t.admin.orders.title} />
+      <PageHeader
+        title={t.admin.orders.title}
+        actions={
+          <>
+            <Link href={`/admin/store/labels?status=${status ?? "paid"}`} className={secondaryButton}>
+              {t.admin.labels.printAll}
+            </Link>
+            <a href={`/api/store/orders/export${status ? `?status=${status}` : ""}`} className={secondaryButton}>
+              {t.admin.labels.exportCsv}
+            </a>
+          </>
+        }
+      />
       <Card className="!p-0">
         <nav className="flex gap-1 overflow-x-auto border-b border-brown/10 px-3 pt-3">
           {tabs.map((tab) => (
