@@ -356,14 +356,25 @@ export const SALE_STATUSES: OrderStatus[] = ["paid", "shipped", "completed"];
 
 // ── Settings ────────────────────────────────────────────────────────────────
 
+/** Older settings had one banner in heroImage/heroTitle/heroSubtitle; present it as the first slide. */
+function withBanners(settings: StoreSettings): StoreSettings {
+  if (settings.heroBanners || !settings.heroImage) return { ...settings, heroBanners: settings.heroBanners ?? [] };
+  return {
+    ...settings,
+    heroBanners: [
+      { id: "legacy", image: settings.heroImage, title: settings.heroTitle, subtitle: settings.heroSubtitle },
+    ],
+  };
+}
+
 export async function getStoreSettings(): Promise<StoreSettings> {
   const db = await getDb();
-  if (!db) return { ...DEFAULT_STORE_SETTINGS, ...(getMemoryStore().storeSettings ?? {}) };
+  if (!db) return withBanners({ ...DEFAULT_STORE_SETTINGS, ...(getMemoryStore().storeSettings ?? {}) });
   const doc = await db.collection<StoreSettings & { _id: string }>("settings").findOne({ _id: "store" });
   if (!doc) return DEFAULT_STORE_SETTINGS;
   const { _id, ...settings } = doc;
   void _id;
-  return { ...DEFAULT_STORE_SETTINGS, ...settings };
+  return withBanners({ ...DEFAULT_STORE_SETTINGS, ...settings });
 }
 
 export async function updateStoreSettings(patch: Partial<StoreSettings>): Promise<void> {

@@ -64,9 +64,23 @@ export const storeSettingsSchema = z.object({
   tagline: z.string().trim().max(160).optional(),
   paymentInfo: z.string().trim().max(1000).optional(),
   instagramUrl: z.union([z.literal(""), z.string().url()]).optional(),
-  heroImage: z.string().max(1000).optional(),
-  heroTitle: z.string().trim().max(80).optional(),
-  heroSubtitle: z.string().trim().max(200).optional(),
+  heroBanners: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(64),
+        image: z.string().min(1).max(1000),
+        title: z.string().trim().max(80).optional(),
+        subtitle: z.string().trim().max(200).optional(),
+        href: z
+          .string()
+          .trim()
+          .max(500)
+          .refine((v) => v === "" || v.startsWith("/") || /^https?:\/\//.test(v))
+          .optional(),
+      })
+    )
+    .max(8)
+    .optional(),
 });
 
 export const hubSettingsSchema = z.object({

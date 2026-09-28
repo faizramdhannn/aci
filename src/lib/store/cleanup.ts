@@ -5,6 +5,6 @@ import { getHubSettings, getStoreSettings } from "@/lib/store/data";
 export async function deleteSettingImageIfUnused(url: string | undefined): Promise<void> {
   if (!url) return;
   const [hub, store] = await Promise.all([getHubSettings(), getStoreSettings()]);
-  if ([hub.outfitImage, hub.storeImage, hub.storeLogo, store.heroImage].includes(url)) return;
+  if ([hub.outfitImage, hub.storeImage, hub.storeLogo, ...(store.heroBanners ?? []).map((b) => b.image)].includes(url)) return;
   await deleteImageIfUnused(url);
 }

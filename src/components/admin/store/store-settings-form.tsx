@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { StoreSettings } from "@/types/store";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import type { HeroBanner, StoreSettings } from "@/types/store";
 import { Card, adminInput, primaryButton } from "@/components/admin/store/ui";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
 import { useToast } from "@/components/ui/toast-provider";
@@ -16,8 +17,17 @@ export function StoreSettingsForm({ initial }: { initial: StoreSettings }) {
   const router = useRouter();
   const [values, setValues] = useState(initial);
   const [saving, setSaving] = useState(false);
+  const banners = values.heroBanners ?? [];
+  const setBanners = (next: HeroBanner[]) => setValues((v) => ({ ...v, heroBanners: next }));
+  const updateBanner = (i: number, patch: Partial<HeroBanner>) =>
+    setBanners(banners.map((b, j) => (j === i ? { ...b, ...patch } : b)));
+  const moveBanner = (i: number, dir: -1 | 1) => {
+    const next = [...banners];
+    [next[i], next[i + dir]] = [next[i + dir], next[i]];
+    setBanners(next);
+  };
 
-  const field = (key: keyof StoreSettings) => ({
+  const field = (key: "storeName" | "tagline" | "whatsappNumber" | "paymentInfo" | "instagramUrl") => ({
     value: values[key] ?? "",
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
       setValues((v) => ({ ...v, [key]: e.target.value })),
@@ -29,7 +39,14 @@ export function StoreSettingsForm({ initial }: { initial: StoreSettings }) {
     const res = await fetch("/api/store/settings", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
+      body: JSON.stringify({
+        ...values,
+        // Slides without a photo yet aren't saved.
+        heroBanners: banners.filter((b) => b.image),
+        heroImage: undefined,
+        heroTitle: undefined,
+        heroSubtitle: undefined,
+      }),
     });
     setSaving(false);
     if (!res.ok) {
@@ -69,26 +86,95 @@ export function StoreSettingsForm({ initial }: { initial: StoreSettings }) {
           </label>
         </div>
       </Card>
-      <Card title={s.hero}>
+      <Card
+        title={s.hero}
+        action={
+          (values.heroBanners?.length ?? 0) < 8 && (
+            <button
+              type="button"
+              onClick={() => setBanners([...banners, { id: `b-${Date.now().toString(36)}`, image: "" }])}
+              className="text-xs font-medium text-orange hover:underline"
+            >
+              + {s.addSlide}
+            </button>
+          )
+        }
+      >
         <p className="-mt-2 mb-4 text-xs text-brown-soft">{s.heroHint}</p>
         <div className="space-y-4">
-          <div className="text-sm">
-            <span className="mb-1 block text-xs text-brown-soft">{s.heroImage}</span>
-            <ImageSetting
-              value={values.heroImage ?? ""}
-              onChange={(url) => setValues((v) => ({ ...v, heroImage: url }))}
-              ratio={16 / 9}
-              clearLabel={s.removeImage}
-            />
-          </div>
-          <label className="block text-sm">
-            <span className="mb-1 block text-xs text-brown-soft">{s.heroTitle}</span>
-            <input maxLength={80} placeholder={s.heroTitlePlaceholder} {...field("heroTitle")} className={adminInput} />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block text-xs text-brown-soft">{s.heroSubtitle}</span>
-            <input maxLength={200} {...field("heroSubtitle")} className={adminInput} />
-          </label>
+          {banners.map((banner, i) => (
+            <div key={banner.id} className="rounded-xl border border-brown/10 p-3">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold text-brown">{format(s.slide, { n: i + 1 })}</span>
+                <span className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-label={s.moveUp}
+                    disabled={i === 0}
+                    onClick={() => moveBanner(i, -1)}
+                    className="rounded-full p-1 text-brown-soft hover:bg-brown/5 disabled:opacity-30"
+                  >
+                    <ChevronUp className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={s.moveDown}
+                    disabled={i === banners.length - 1}
+                    onClick={() => moveBanner(i, 1)}
+                    className="rounded-full p-1 text-brown-soft hover:bg-brown/5 disabled:opacity-30"
+                  >
+                    <ChevronDown className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBanners(banners.filter((b) => b.id !== banner.id))}
+                    className="ml-1 text-xs text-brown-soft hover:text-red-500"
+                  >
+                    {s.removeSlide}
+                  </button>
+                </span>
+              </div>
+              <div className="grid gap-3 md:grid-cols-[240px_1fr]">
+                <ImageSetting
+                  value={banner.image}
+                  onChange={(url) => updateBanner(i, { image: url })}
+                  ratio={16 / 9}
+                  clearLabel={s.removeImage}
+                />
+                <div className="space-y-3">
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-xs text-brown-soft">{s.heroTitle}</span>
+                    <input
+                      maxLength={80}
+                      placeholder={s.heroTitlePlaceholder}
+                      value={banner.title ?? ""}
+                      onChange={(e) => updateBanner(i, { title: e.target.value })}
+                      className={adminInput}
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-xs text-brown-soft">{s.heroSubtitle}</span>
+                    <input
+                      maxLength={200}
+                      value={banner.subtitle ?? ""}
+                      onChange={(e) => updateBanner(i, { subtitle: e.target.value })}
+                      className={adminInput}
+                    />
+                  </label>
+                  <label className="block text-sm">
+                    <span className="mb-1 block text-xs text-brown-soft">{s.heroLink}</span>
+                    <input
+                      maxLength={500}
+                      placeholder={s.heroLinkPlaceholder}
+                      value={banner.href ?? ""}
+                      onChange={(e) => updateBanner(i, { href: e.target.value })}
+                      className={adminInput}
+                    />
+                  </label>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </Card>
       <button type="submit" disabled={saving} className={primaryButton}>

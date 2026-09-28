@@ -72,10 +72,21 @@ export interface StoreSettings {
   /** Free text shown after ordering, e.g. bank account details. */
   paymentInfo: string;
   instagramUrl?: string;
-  /** Hero banner on /narras. No image = the plain text header. */
+  /** Slides of the hero banner on /narras, in order. Empty = the plain text header. */
+  heroBanners?: HeroBanner[];
+  /** @deprecated single-banner fields from before heroBanners; read once as the first slide. */
   heroImage?: string;
   heroTitle?: string;
   heroSubtitle?: string;
+}
+
+export interface HeroBanner {
+  id: string;
+  image: string;
+  title?: string;
+  subtitle?: string;
+  /** Where the button goes, e.g. /narras/p/pashmina. Empty = scroll to the products. */
+  href?: string;
 }
 
 /** Cover photos of the two cards on the hub page (/). Empty = picked automatically. */
