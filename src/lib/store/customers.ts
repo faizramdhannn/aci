@@ -221,3 +221,7 @@ export async function toggleWishlist(id: string, productId: string): Promise<str
   await patchCustomer(id, { wishlist: next });
   return next;
 }
+
+export async function setCustomerRole(id: string, role: "customer" | "admin"): Promise<void> {
+  await patchCustomer(id, { role });
+}

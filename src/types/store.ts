@@ -156,6 +156,8 @@ export interface Customer {
   cart: CartItem[];
   /** Product ids, newest first. */
   wishlist?: string[];
+  /** "admin" can use /admin. Emails in src/config/admins.ts are always admin regardless. */
+  role?: "customer" | "admin";
   createdAt: string;
   updatedAt: string;
 }

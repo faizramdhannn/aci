@@ -5,6 +5,9 @@ import { listCustomers } from "@/lib/store/customers";
 import { formatRupiah } from "@/lib/store/money";
 import { whatsappLink } from "@/lib/store/whatsapp";
 import { getLocale, getStoreDictionary } from "@/lib/i18n/server";
+import { adminSession } from "@/lib/auth";
+import { isSuperadminEmail } from "@/config/admins";
+import { RoleSelect } from "@/components/admin/store/role-select";
 
 export const dynamic = "force-dynamic";
 
@@ -13,11 +16,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CustomersPage() {
-  const [t, locale, customers, orders] = await Promise.all([
+  const [t, locale, customers, orders, session] = await Promise.all([
     getStoreDictionary(),
     getLocale(),
     listCustomers(),
     listOrders(),
+    adminSession(),
   ]);
   const c = t.admin.customers;
   const statsFor = (id: string) => {
@@ -37,7 +41,7 @@ export default async function CustomersPage() {
           <p className="p-5 text-sm text-brown-soft">{c.empty}</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-sm">
+            <table className="w-full min-w-[820px] text-sm">
               <thead className="text-left text-xs text-brown-soft">
                 <tr className="border-b border-brown/10">
                   <th className="px-4 py-2.5 font-medium">{c.name}</th>
@@ -46,6 +50,7 @@ export default async function CustomersPage() {
                   <th className="px-4 py-2.5 text-right font-medium">{c.orders}</th>
                   <th className="px-4 py-2.5 text-right font-medium">{c.spent}</th>
                   <th className="px-4 py-2.5 font-medium">{c.joined}</th>
+                  <th className="px-4 py-2.5 font-medium">{c.role}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brown/10">
@@ -72,6 +77,13 @@ export default async function CustomersPage() {
                       <td className="px-4 py-3 text-right tabular-nums text-brown">{stats.orders}</td>
                       <td className="px-4 py-3 text-right tabular-nums text-brown">{formatRupiah(stats.spent)}</td>
                       <td className="whitespace-nowrap px-4 py-3 text-brown-soft">{formatDate(cu.createdAt, locale, false)}</td>
+                      <td className="px-4 py-3">
+                        <RoleSelect
+                          id={cu._id}
+                          role={cu.role ?? "customer"}
+                          locked={isSuperadminEmail(cu.email) ? "superadmin" : cu._id === session?.customerId ? "you" : undefined}
+                        />
+                      </td>
                     </tr>
                   );
                 })}
