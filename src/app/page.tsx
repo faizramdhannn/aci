@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import Image from "next/image";
 import type { Metadata } from "next";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
@@ -63,6 +64,7 @@ export default async function HubPage() {
           <Link
             key={card.href}
             href={card.href}
+            aria-label={`${card.title} — ${t.hub.enter.replace(/\s*→\s*$/, "")}`}
             className="group overflow-hidden rounded-3xl border border-brown/10 bg-surface shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
           >
             <div className={`relative aspect-[4/3] overflow-hidden ${card.tone}`}>
@@ -77,12 +79,17 @@ export default async function HubPage() {
                 />
               )}
             </div>
-            <div className="flex items-end justify-between gap-4 p-5">
+            <div className="flex items-start justify-between gap-4 p-5">
               <div>
                 <h2 className="text-xl font-semibold text-brown">{card.title}</h2>
                 <p className="mt-1 text-sm text-brown-soft">{card.body}</p>
               </div>
-              <span className="shrink-0 text-sm font-semibold text-orange">{t.hub.enter}</span>
+              <span
+                aria-hidden
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-orange text-cream transition-transform duration-300 group-hover:translate-x-1"
+              >
+                <ArrowRight className="h-5 w-5" />
+              </span>
             </div>
           </Link>
         ))}
