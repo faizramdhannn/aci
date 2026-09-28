@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Check, ChevronDown } from "lucide-react";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
+import { SWITCH_SITE_EVENT } from "@/lib/splash";
 
 export interface SiteOption {
   key: "outfit" | "store";
@@ -91,7 +92,10 @@ export function SiteSwitcherMenu({
                 href={site.href}
                 role="menuitem"
                 aria-current={isActive ? "page" : undefined}
-                onClick={() => setOpen(false)}
+                onClick={() => {
+                  setOpen(false);
+                  if (!isActive) window.dispatchEvent(new CustomEvent(SWITCH_SITE_EVENT, { detail: site.key }));
+                }}
                 className={`flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors ${
                   isActive ? "bg-brown/10" : "hover:bg-brown/5"
                 }`}
