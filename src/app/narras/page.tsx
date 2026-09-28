@@ -6,6 +6,7 @@ import { getStoreSettings, listStoreProducts } from "@/lib/store/data";
 import { listCollections } from "@/lib/store/collections";
 import { colourOptions, filterProducts, SORTS, type ProductSort } from "@/lib/store/catalog";
 import { StoreFilters } from "@/components/store/store-filters";
+import { listReviews, ratingsByProduct } from "@/lib/store/reviews";
 import { format } from "@/lib/i18n/dictionaries";
 import { getStoreDictionary } from "@/lib/i18n/server";
 
@@ -19,13 +20,15 @@ export async function generateMetadata(): Promise<Metadata> {
 type Params = { q?: string; collection?: string; colour?: string; sort?: string; stock?: string };
 
 export default async function StorePage({ searchParams }: { searchParams: Promise<Params> }) {
-  const [params, t, settings, all, collections] = await Promise.all([
+  const [params, t, settings, all, collections, reviews] = await Promise.all([
     searchParams,
     getStoreDictionary(),
     getStoreSettings(),
     listStoreProducts({ activeOnly: true }),
     listCollections(),
+    listReviews({ status: "active" }),
   ]);
+  const ratings = ratingsByProduct(reviews);
   const collection = collections.find((c) => c.slug === params.collection);
   // Only collections that have something in them.
   const usedCollections = collections.filter((c) => all.some((p) => (p.collectionIds ?? []).includes(c._id)));
@@ -72,7 +75,7 @@ export default async function StorePage({ searchParams }: { searchParams: Promis
       ) : (
         <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
           {products.map((product, i) => (
-            <ProductCard key={product._id} product={product} t={t} priority={i < 4} />
+            <ProductCard key={product._id} product={product} t={t} priority={i < 4} rating={ratings[product._id]} />
           ))}
         </div>
       )}

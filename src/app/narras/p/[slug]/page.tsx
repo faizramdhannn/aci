@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { ProductGallery } from "@/components/store/product-gallery";
 import { AddToCart } from "@/components/store/add-to-cart";
 import { CommentsSection } from "@/components/comments/comments-section";
+import { ReviewsSection } from "@/components/store/reviews-section";
 import { getStoreProductBySlug, getStoreSettings } from "@/lib/store/data";
 import { formatRupiah } from "@/lib/store/money";
 import { getStoreDictionary } from "@/lib/i18n/server";
@@ -49,6 +50,7 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
         </div>
       </div>
       <div className="max-w-2xl">
+        <ReviewsSection productId={product._id} />
         <CommentsSection target="product" targetId={product._id} />
       </div>
     </main>

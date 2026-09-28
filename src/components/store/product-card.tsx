@@ -5,8 +5,20 @@ import type { StoreDictionary } from "@/lib/i18n/store-dictionaries";
 import { formatRupiah } from "@/lib/store/money";
 import { totalStock } from "@/lib/store/data";
 import { WishlistButton } from "@/components/store/wishlist-button";
+import { Stars } from "@/components/store/stars";
+import type { RatingSummary } from "@/lib/store/reviews";
 
-export function ProductCard({ product, t, priority }: { product: StoreProduct; t: StoreDictionary; priority?: boolean }) {
+export function ProductCard({
+  product,
+  t,
+  priority,
+  rating,
+}: {
+  product: StoreProduct;
+  t: StoreDictionary;
+  priority?: boolean;
+  rating?: RatingSummary;
+}) {
   const soldOut = totalStock(product) === 0;
   const onSale = Boolean(product.compareAtPrice && product.compareAtPrice > product.price);
   return (
@@ -40,6 +52,14 @@ export function ProductCard({ product, t, priority }: { product: StoreProduct; t
         <span className="font-semibold text-brown">{formatRupiah(product.price)}</span>
         {onSale && <span className="ml-2 text-brown-soft line-through">{formatRupiah(product.compareAtPrice!)}</span>}
       </p>
+      {rating && (
+        <p className="mt-0.5 flex items-center gap-1 text-xs text-brown-soft">
+          <Stars value={rating.average} size={12} />
+          <span>
+            {rating.average.toFixed(1)} ({rating.count})
+          </span>
+        </p>
+      )}
       {product.variants.length > 1 && (
         <p className="mt-0.5 text-xs text-brown-soft">{product.variants.map((v) => v.name).join(" · ")}</p>
       )}
