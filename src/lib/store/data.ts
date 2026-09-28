@@ -3,6 +3,7 @@ import { getDb } from "@/lib/mongodb";
 import { getMemoryStore } from "@/lib/memory-store";
 import { deleteStoredImage } from "@/lib/storage";
 import { toWhatsappDigits } from "@/lib/store/whatsapp";
+import { deleteCommentsFor } from "@/lib/comments";
 import type {
   HubSettings,
   OrderCustomer,
@@ -113,6 +114,7 @@ export async function deleteStoreProduct(id: string): Promise<void> {
   } else {
     await db.collection<StoreProduct>(PRODUCTS).deleteOne({ _id: id });
   }
+  await deleteCommentsFor("product", id);
   await Promise.all(product.images.map((url) => deleteStoredImage(url).catch(() => undefined)));
 }
 

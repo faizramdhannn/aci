@@ -83,3 +83,18 @@ export interface HubSettings {
   outfitImage?: string;
   storeImage?: string;
 }
+
+export type CommentTarget = "look" | "product";
+export type CommentStatus = "active" | "draft";
+
+/** A visitor comment on a Spill Outfit look or a by.narras product. */
+export interface ProductComment {
+  _id: string;
+  target: CommentTarget;
+  /** Look or product _id. */
+  targetId: string;
+  name: string;
+  body: string;
+  status: CommentStatus;
+  createdAt: string;
+}

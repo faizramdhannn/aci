@@ -11,6 +11,7 @@ import { getShoppableImageBySlug, listHotspotsForImage, listAnnotationsForImage 
 import { getDictionary, getLocale } from "@/lib/i18n/server";
 import { format } from "@/lib/i18n/dictionaries";
 import { storeNameFor } from "@/lib/store-name";
+import { CommentsSection } from "@/components/comments/comments-section";
 
 export const dynamic = "force-dynamic";
 
@@ -118,6 +119,7 @@ export default async function ShoppableImagePage({ params }: { params: Params })
           )}
           {items.length > 0 && <p className="mt-3 text-xs text-brown-soft">{t.look.affiliateNote}</p>}
         </section>
+        <CommentsSection target="look" targetId={image._id} />
       </main>
       <SiteFooter />
       <BottomBar />

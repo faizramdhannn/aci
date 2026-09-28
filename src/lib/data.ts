@@ -6,6 +6,7 @@ import type { Filter } from "mongodb";
 import { paginate, type Paginated } from "@/lib/pagination";
 import { remapPoint, shopCropFor, type CropRect } from "@/lib/crop";
 import { deleteStoredImage } from "@/lib/storage";
+import { deleteCommentsFor } from "@/lib/comments";
 
 /**
  * Thin data-access layer: reads/writes Mongo when MONGODB_URI is configured
@@ -268,6 +269,7 @@ export async function updateShoppableImage(
 export async function deleteShoppableImage(id: string): Promise<void> {
   const image = await getShoppableImageById(id);
   await removeShoppableImageRecords(id);
+  await deleteCommentsFor("look", id);
   await deleteImageIfUnused(image?.imageUrl);
 }
 
