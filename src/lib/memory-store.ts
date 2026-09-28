@@ -5,6 +5,8 @@ import {
   seedShoppableImages,
   seedViewEvents,
 } from "@/lib/seed-data";
+import type { StoreOrder, StoreProduct, StoreSettings } from "@/types/store";
+import { seedStoreProducts } from "@/lib/store/seed";
 import type { Annotation, Category, ClickEvent, Hotspot, ShoppableImage, SiteSettings, ViewEvent } from "@/types";
 
 /**
@@ -23,6 +25,10 @@ declare global {
         clicks: ClickEvent[];
         annotations: Annotation[];
         settings: SiteSettings | null;
+        storeProducts: StoreProduct[];
+        storeOrders: StoreOrder[];
+        storeSettings: StoreSettings | null;
+        orderCounter: number;
       }
     | undefined;
 }
@@ -36,6 +42,10 @@ function initStore() {
     clicks: [...seedClickEvents],
     annotations: [] as Annotation[],
     settings: null as SiteSettings | null,
+    storeProducts: structuredClone(seedStoreProducts),
+    storeOrders: [] as StoreOrder[],
+    storeSettings: null as StoreSettings | null,
+    orderCounter: 0,
   };
 }
 
@@ -43,8 +53,12 @@ export function getMemoryStore() {
   if (!global._aciMemoryStore) {
     global._aciMemoryStore = initStore();
   }
-  if (!global._aciMemoryStore.annotations) {
-    global._aciMemoryStore.annotations = [];
+  // Fill in collections added after a dev server's store was created (HMR keeps globals).
+  if (global._aciMemoryStore.orderCounter === undefined) {
+    const fresh = initStore();
+    for (const key of Object.keys(fresh) as (keyof typeof fresh)[]) {
+      if (global._aciMemoryStore[key] === undefined) Object.assign(global._aciMemoryStore, { [key]: fresh[key] });
+    }
   }
   return global._aciMemoryStore;
 }

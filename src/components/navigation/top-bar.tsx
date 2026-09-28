@@ -14,7 +14,7 @@ export async function TopBar() {
       <header className="sticky top-0 z-40 hidden md:block">
         <div className="mx-auto max-w-6xl px-6 pt-4">
           <div className="glass flex items-center justify-between rounded-full px-6 py-3 shadow-sm">
-            <Link href="/" className="flex items-center gap-2 font-display text-2xl font-semibold text-brown">
+            <Link href="/outfit" className="flex items-center gap-2 font-display text-2xl font-semibold text-brown">
               <Logo size={30} />
               {settings.siteName}
             </Link>
@@ -33,7 +33,7 @@ export async function TopBar() {
 
       {/* Mobile: compact top strip, logo + language + theme + search (nav lives in the bottom bar) */}
       <header className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 pt-4 md:hidden">
-        <Link href="/" className="glass flex items-center gap-1.5 rounded-full px-3 py-2 font-display text-lg font-semibold text-brown">
+        <Link href="/outfit" className="glass flex items-center gap-1.5 rounded-full px-3 py-2 font-display text-lg font-semibold text-brown">
           <Logo size={24} />
           {settings.siteName}
         </Link>

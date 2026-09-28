@@ -3,6 +3,7 @@ import { ToastProvider } from "@/components/ui/toast-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SplashScreen } from "@/components/storefront/splash-screen";
 import { SPLASH_COOKIE } from "@/lib/splash";
+import { HUB_NAME } from "@/config/site";
 import { cookies } from "next/headers";
 import { siteUrl } from "@/lib/site-url";
 import { fontVariables } from "@/lib/fonts";
@@ -31,14 +32,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [locale, settings, cookieStore] = await Promise.all([getLocale(), getSiteSettings(), cookies()]);
+  const [locale, cookieStore] = await Promise.all([getLocale(), cookies()]);
   const showSplash = !cookieStore.get(SPLASH_COOKIE);
 
   return (
     <html lang={locale} className={`${fontVariables} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-cream text-brown" suppressHydrationWarning>
         <LocaleProvider locale={locale}>
-          {showSplash && <SplashScreen word={settings.siteName.toLowerCase()} />}
+          {showSplash && <SplashScreen word={HUB_NAME} />}
           <ToastProvider>{children}</ToastProvider>
         </LocaleProvider>
       </body>

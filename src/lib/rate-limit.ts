@@ -20,7 +20,7 @@ interface Bucket {
 const buckets = new Map<string, Bucket>();
 let lastCleanup = 0;
 
-function allowInMemory(identity: string, now = Date.now()): boolean {
+function allowInMemory(identity: string, max: number, now = Date.now()): boolean {
   if (now - lastCleanup > WINDOW_SECONDS * 1000) {
     for (const [key, bucket] of buckets) if (bucket.resetAt <= now) buckets.delete(key);
     lastCleanup = now;
@@ -30,13 +30,12 @@ function allowInMemory(identity: string, now = Date.now()): boolean {
     buckets.set(identity, { count: 1, resetAt: now + WINDOW_SECONDS * 1000 });
     return true;
   }
-  if (bucket.count >= MAX_HITS_PER_WINDOW) return false;
+  if (bucket.count >= max) return false;
   bucket.count += 1;
   return true;
 }
 
-async function allowInRedis(identity: string, url: string, token: string): Promise<boolean> {
-  const key = `aci:click:${identity}`;
+async function allowInRedis(key: string, max: number, url: string, token: string): Promise<boolean> {
   const res = await fetch(`${url.replace(/\/$/, "")}/pipeline`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -50,21 +49,28 @@ async function allowInRedis(identity: string, url: string, token: string): Promi
   if (!res.ok) throw new Error(`Upstash responded ${res.status}`);
   const [incr] = (await res.json()) as [{ result?: number; error?: string }];
   if (typeof incr?.result !== "number") throw new Error(incr?.error ?? "Unexpected Upstash response");
-  return incr.result <= MAX_HITS_PER_WINDOW;
+  return incr.result <= max;
 }
 
-/** True if this identity is under the limit (and counts this hit), false if it should be throttled. */
-export async function allowRateLimitedHit(identity: string): Promise<boolean> {
+/**
+ * True if this identity is under the limit (and counts this hit), false if it
+ * should be throttled. `scope` keeps separate counters per use (clicks, orders).
+ */
+export async function allowRateLimitedHit(
+  identity: string,
+  { scope = "click", max = MAX_HITS_PER_WINDOW }: { scope?: string; max?: number } = {}
+): Promise<boolean> {
+  const key = `aci:${scope}:${identity}`;
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (url && token) {
     try {
-      return await allowInRedis(identity, url, token);
+      return await allowInRedis(key, max, url, token);
     } catch (error) {
       console.warn("[aci] rate limiter: Redis unavailable, using in-memory fallback:", (error as Error).message);
     }
   }
-  return allowInMemory(identity);
+  return allowInMemory(key, max);
 }
 
 /** Test hook: clears the in-memory counters. */

@@ -170,6 +170,20 @@ npm run seed -- --yes-wipe-everything   # DESTRUCTIVE: wipes the database and lo
 - Fonts load once, self-hosted via `next/font` (text annotations map their font name to next/font's family, so Konva and the SVG overlay still resolve it)
 - Light-mode orange darkened to `#ad520d` so orange text and buttons pass WCAG AA on cream
 
+## by.narras (hijab store)
+
+The site now opens on a hub (`/`) after the "narras" splash, with two cards:
+
+- **Spill Outfit** (`/outfit`, plus the existing `/shop`, `/categories`, `/p/...`): the shop-the-look site.
+- **by.narras** (`/narras`): a small store for my own hijabs.
+  - Catalog, product pages with colour variants and stock, and a cart kept in the browser.
+  - Checkout via WhatsApp (free, no payment gateway). The order is saved, stock is reserved, and the buyer gets a receipt page (`/narras/order/<id>`) with a button that sends the order to the store's WhatsApp.
+  - Shipping cost is agreed on WhatsApp, then entered by the admin; the total updates.
+  - Admin under `/admin/store`, laid out like Shopify: Home (sales, orders to confirm, low stock), Orders (status tabs, fulfilment, courier/tracking), Products (photos, price, compare-at price, colours & stock), Customers (built from orders), Store settings (WhatsApp number, payment instructions).
+  - Cancelling an order returns its stock; re-opening it takes the stock again.
+
+Set the WhatsApp number in **Admin → by.narras → Store settings** before sharing the store.
+
 ## Known limitations
 
 Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to ship a working MVP:

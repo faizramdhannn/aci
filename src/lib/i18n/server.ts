@@ -14,3 +14,8 @@ export async function getAdminDictionary() {
   const { adminDictionaries } = await import("@/lib/i18n/admin-dictionaries");
   return adminDictionaries[await getLocale()];
 }
+
+export async function getStoreDictionary() {
+  const { storeDictionaries } = await import("@/lib/i18n/store-dictionaries");
+  return storeDictionaries[await getLocale()];
+}
