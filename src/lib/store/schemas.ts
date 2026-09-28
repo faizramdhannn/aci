@@ -16,6 +16,7 @@ export const productSchema = z.object({
   compareAtPrice: rupiah.optional().nullable(),
   images: z.array(z.string().min(1).max(1000)).max(10),
   variants: z.array(variantSchema).min(1).max(50),
+  collectionIds: z.array(z.string().min(1).max(64)).max(20).optional(),
   status: z.enum(["active", "draft"]),
 });
 

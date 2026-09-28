@@ -5,7 +5,7 @@ import {
   seedShoppableImages,
   seedViewEvents,
 } from "@/lib/seed-data";
-import type { Customer, HubSettings, ProductComment, StoreOrder, StoreProduct, StoreSettings } from "@/types/store";
+import type { Customer, HubSettings, ProductComment, StoreCollection, StoreReview, StoreVoucher, StoreOrder, StoreProduct, StoreSettings } from "@/types/store";
 import { seedStoreProducts } from "@/lib/store/seed";
 import type { Annotation, Category, ClickEvent, Hotspot, ShoppableImage, SiteSettings, ViewEvent } from "@/types";
 
@@ -31,6 +31,9 @@ declare global {
         hubSettings: HubSettings | null;
         comments: ProductComment[];
         customers: Customer[];
+        storeCollections: StoreCollection[];
+        vouchers: StoreVoucher[];
+        reviews: StoreReview[];
         resetTokens: { _id: string; customerId: string; expiresAt: string }[];
         orderCounter: number;
       }
@@ -52,6 +55,13 @@ function initStore() {
     hubSettings: null as HubSettings | null,
     comments: [] as ProductComment[],
     customers: [] as Customer[],
+    storeCollections: [
+      { _id: "col-pashmina", name: "Pashmina", slug: "pashmina", sortOrder: 0 },
+      { _id: "col-segi-empat", name: "Segi Empat", slug: "segi-empat", sortOrder: 1 },
+      { _id: "col-instan", name: "Instan", slug: "instan", sortOrder: 2 },
+    ] as StoreCollection[],
+    vouchers: [] as StoreVoucher[],
+    reviews: [] as StoreReview[],
     resetTokens: [] as { _id: string; customerId: string; expiresAt: string }[],
     orderCounter: 0,
   };
@@ -62,7 +72,7 @@ export function getMemoryStore() {
     global._aciMemoryStore = initStore();
   }
   // Fill in collections added after a dev server's store was created (HMR keeps globals).
-  if (global._aciMemoryStore.resetTokens === undefined) {
+  if (global._aciMemoryStore.reviews === undefined) {
     const fresh = initStore();
     for (const key of Object.keys(fresh) as (keyof typeof fresh)[]) {
       if (global._aciMemoryStore[key] === undefined) Object.assign(global._aciMemoryStore, { [key]: fresh[key] });

@@ -19,6 +19,8 @@ export interface StoreProduct {
   compareAtPrice?: number;
   images: string[];
   variants: StoreVariant[];
+  /** Collections (e.g. Pashmina, Koleksi Ramadan) this product is listed in. */
+  collectionIds?: string[];
   status: StoreProductStatus;
   createdAt: string;
   updatedAt: string;
@@ -52,6 +54,9 @@ export interface StoreOrder {
   number: string;
   items: OrderItem[];
   subtotal: number;
+  /** Voucher applied at checkout. */
+  voucherCode?: string;
+  discount?: number;
   /** Set by the admin after confirming shipping over WhatsApp. */
   shippingCost?: number;
   total: number;
@@ -74,6 +79,11 @@ export interface StoreSettings {
   /** Free text shown after ordering, e.g. bank account details. */
   paymentInfo: string;
   instagramUrl?: string;
+  /** Store info pages (plain text; blank lines separate paragraphs). */
+  howToOrder?: string;
+  shippingPolicy?: string;
+  returnPolicy?: string;
+  faq?: { q: string; a: string }[];
   /** Slides of the hero banner on /narras, in order. Empty = the plain text header. */
   heroBanners?: HeroBanner[];
   /** @deprecated single-banner fields from before heroBanners; read once as the first slide. */
@@ -144,6 +154,46 @@ export interface Customer {
   addresses: CustomerAddress[];
   defaultAddressId?: string;
   cart: CartItem[];
+  /** Product ids, newest first. */
+  wishlist?: string[];
   createdAt: string;
   updatedAt: string;
+}
+
+export interface StoreCollection {
+  _id: string;
+  name: string;
+  slug: string;
+  sortOrder: number;
+}
+
+export type VoucherType = "percent" | "fixed";
+
+export interface StoreVoucher {
+  _id: string;
+  /** Uppercase, what shoppers type. */
+  code: string;
+  type: VoucherType;
+  /** Percent (1–100) or rupiah. */
+  value: number;
+  /** Cap for percent vouchers, in rupiah. */
+  maxDiscount?: number;
+  minSubtotal?: number;
+  /** Total uses allowed; empty = unlimited. */
+  maxUses?: number;
+  used: number;
+  expiresAt?: string;
+  active: boolean;
+  createdAt: string;
+}
+
+export interface StoreReview {
+  _id: string;
+  productId: string;
+  customerId: string;
+  name: string;
+  rating: number;
+  body: string;
+  status: "active" | "draft";
+  createdAt: string;
 }

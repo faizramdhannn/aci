@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
-import type { StoreProduct, StoreVariant } from "@/types/store";
+import type { StoreCollection, StoreProduct, StoreVariant } from "@/types/store";
 import { ImageUploadField } from "@/components/editor/image-upload-field";
 import { Card, adminInput, primaryButton } from "@/components/admin/store/ui";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
@@ -26,7 +26,7 @@ const EMPTY: Draft = {
 const digits = (value: string) => value.replace(/\D/g, "");
 const newVariantId = () => `v-${Math.random().toString(36).slice(2, 10)}`;
 
-export function ProductForm({ product }: { product?: StoreProduct }) {
+export function ProductForm({ product, collections }: { product?: StoreProduct; collections: StoreCollection[] }) {
   const t = useStoreDictionary();
   const p = t.admin.products;
   const toast = useToast();
@@ -235,6 +235,34 @@ export function ProductForm({ product }: { product?: StoreProduct }) {
             <option value="active">{p.active}</option>
             <option value="draft">{p.draft}</option>
           </select>
+          {collections.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs text-brown-soft">{t.admin.collections.pick}</p>
+              <div className="flex flex-wrap gap-1.5">
+                {collections.map((c) => {
+                  const on = (draft.collectionIds ?? []).includes(c._id);
+                  return (
+                    <button
+                      key={c._id}
+                      type="button"
+                      aria-pressed={on}
+                      onClick={() =>
+                        set(
+                          "collectionIds",
+                          on ? (draft.collectionIds ?? []).filter((x) => x !== c._id) : [...(draft.collectionIds ?? []), c._id]
+                        )
+                      }
+                      className={`rounded-full border px-3 py-1 text-xs ${
+                        on ? "border-brown bg-brown text-cream" : "border-brown/20 text-brown hover:border-brown/50"
+                      }`}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           {product && product.status === "active" && (
             <Link href={`/narras/p/${product.slug}`} target="_blank" className="mt-3 inline-block text-xs font-medium text-orange hover:underline">
               {p.view}

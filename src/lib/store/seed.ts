@@ -12,6 +12,7 @@ export const seedStoreProducts: StoreProduct[] = [
     price: 69000,
     compareAtPrice: 85000,
     images: ["/seed/narras-pashmina.svg"],
+    collectionIds: ["col-pashmina"],
     variants: [
       { id: "v-cream", name: "Cream", stock: 12 },
       { id: "v-mocca", name: "Mocca", stock: 4 },
@@ -28,6 +29,7 @@ export const seedStoreProducts: StoreProduct[] = [
     description: "Voal premium lasercut, tegak di dahi tanpa banyak jarum. 115 x 115 cm.",
     price: 55000,
     images: ["/seed/narras-segi-empat.svg"],
+    collectionIds: ["col-segi-empat"],
     variants: [
       { id: "v-dusty", name: "Dusty Pink", stock: 8 },
       { id: "v-sage", name: "Sage", stock: 6 },
@@ -43,6 +45,7 @@ export const seedStoreProducts: StoreProduct[] = [
     description: "Hijab instan jersey adem, tinggal pakai. Cocok untuk harian.",
     price: 45000,
     images: ["/seed/narras-bergo.svg"],
+    collectionIds: ["col-instan"],
     variants: [{ id: "v-olive", name: "Olive", stock: 10 }],
     status: "active",
     createdAt: "2026-09-03T08:00:00.000Z",
