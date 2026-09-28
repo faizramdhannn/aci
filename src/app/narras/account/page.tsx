@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { customerId } from "@/lib/auth";
 import { getCustomerById } from "@/lib/store/customers";
-import { listOrdersForCustomer } from "@/lib/store/data";
+import { getStoreProductsByIds, listOrdersForCustomer } from "@/lib/store/data";
+import { ProductCard } from "@/components/store/product-card";
 import { formatRupiah } from "@/lib/store/money";
 import { getLocale, getStoreDictionary } from "@/lib/i18n/server";
 import { format } from "@/lib/i18n/dictionaries";
@@ -11,7 +12,7 @@ import { AddressBook, LogoutButton, PasswordForm, ProfileForm } from "@/componen
 
 export const dynamic = "force-dynamic";
 
-const TABS = ["orders", "profile", "addresses", "security"] as const;
+const TABS = ["orders", "wishlist", "profile", "addresses", "security"] as const;
 type Tab = (typeof TABS)[number];
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -30,6 +31,13 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
     getLocale(),
   ]);
   if (!customer) redirect("/narras/login?callbackUrl=/narras/account");
+  const wishlistIds = customer.wishlist ?? [];
+  const wished =
+    tab === "wishlist"
+      ? (await getStoreProductsByIds(wishlistIds))
+          .filter((p) => p.status === "active")
+          .sort((a, b) => wishlistIds.indexOf(a._id) - wishlistIds.indexOf(b._id))
+      : [];
   const t = dict.account;
   const date = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-GB", {
     day: "numeric",
@@ -83,6 +91,17 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
               </li>
             ))}
           </ul>
+        ))}
+
+      {tab === "wishlist" &&
+        (wished.length === 0 ? (
+          <p className="text-sm text-brown-soft">{t.wishlistEmpty}</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3">
+            {wished.map((p) => (
+              <ProductCard key={p._id} product={p} t={dict} />
+            ))}
+          </div>
         ))}
 
       {tab === "profile" && <ProfileForm name={customer.name} phone={customer.phone} email={customer.email} />}

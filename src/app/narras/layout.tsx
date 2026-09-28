@@ -21,7 +21,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
   const customer = id ? await getCustomerById(id) : null;
   return (
     // Keyed by account so logging in/out starts from that account's saved cart.
-    <CartProvider key={customer?._id ?? "guest"} initial={customer?.cart ?? []} signedIn={Boolean(customer)}>
+    <CartProvider key={customer?._id ?? "guest"} initial={customer?.cart ?? []} initialWishlist={customer?.wishlist ?? []} signedIn={Boolean(customer)}>
       <header className="sticky top-0 z-40 border-b border-brown/10 bg-cream/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <SiteSwitcher current="store" compact />

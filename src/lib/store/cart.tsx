@@ -21,20 +21,26 @@ interface CartContextValue {
   /** After checkout: the server already emptied the saved cart. */
   clearCartLocally: () => void;
   loginHref: string;
+  wishlist: string[];
+  /** Returns the new state (true = saved), or null when sent to log in. */
+  toggleWishlist: (productId: string) => boolean | null;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
 export function CartProvider({
   initial,
+  initialWishlist,
   signedIn,
   children,
 }: {
   initial: CartLine[];
+  initialWishlist: string[];
   signedIn: boolean;
   children: React.ReactNode;
 }) {
   const [lines, setLines] = useState(initial);
+  const [wishlist, setWishlist] = useState(initialWishlist);
   const router = useRouter();
   const pathname = usePathname();
   const saving = useRef(Promise.resolve());
@@ -79,6 +85,24 @@ export function CartProvider({
     },
     replaceCart: save,
     clearCartLocally: () => setLines([]),
+    wishlist,
+    toggleWishlist(productId) {
+      if (!signedIn) {
+        router.push(loginHref);
+        return null;
+      }
+      const saved = !wishlist.includes(productId);
+      setWishlist(saved ? [productId, ...wishlist] : wishlist.filter((p) => p !== productId));
+      fetch("/api/store/account/wishlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((list: string[] | null) => list && setWishlist(list))
+        .catch(() => undefined);
+      return saved;
+    },
   };
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

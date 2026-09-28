@@ -4,6 +4,7 @@ import type { StoreProduct } from "@/types/store";
 import type { StoreDictionary } from "@/lib/i18n/store-dictionaries";
 import { formatRupiah } from "@/lib/store/money";
 import { totalStock } from "@/lib/store/data";
+import { WishlistButton } from "@/components/store/wishlist-button";
 
 export function ProductCard({ product, t, priority }: { product: StoreProduct; t: StoreDictionary; priority?: boolean }) {
   const soldOut = totalStock(product) === 0;
@@ -21,6 +22,9 @@ export function ProductCard({ product, t, priority }: { product: StoreProduct; t
             priority={priority}
           />
         )}
+        <span className="absolute right-2 top-2">
+          <WishlistButton productId={product._id} overlay />
+        </span>
         {(soldOut || onSale) && (
           <span
             className={`absolute left-2 top-2 rounded-full px-2.5 py-1 text-[11px] font-semibold ${

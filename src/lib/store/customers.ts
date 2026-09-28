@@ -209,3 +209,15 @@ export function publicCustomer(customer: Customer) {
   return { ...rest, hasPassword: Boolean(passwordHash) };
 }
 export type PublicCustomer = ReturnType<typeof publicCustomer>;
+
+// ── Wishlist ────────────────────────────────────────────────────────────────
+
+/** Adds or removes a product; returns the new list (newest first). */
+export async function toggleWishlist(id: string, productId: string): Promise<string[]> {
+  const customer = await getCustomerById(id);
+  if (!customer) throw new CustomerError("not_found");
+  const current = customer.wishlist ?? [];
+  const next = current.includes(productId) ? current.filter((p) => p !== productId) : [productId, ...current].slice(0, 200);
+  await patchCustomer(id, { wishlist: next });
+  return next;
+}

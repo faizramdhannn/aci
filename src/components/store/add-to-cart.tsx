@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import type { StoreVariant } from "@/types/store";
 import { useCartContext } from "@/lib/store/cart";
+import { WishlistButton } from "@/components/store/wishlist-button";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
 import { useToast } from "@/components/ui/toast-provider";
 import { format } from "@/lib/i18n/dictionaries";
@@ -89,6 +90,7 @@ export function AddToCart({ productId, variants }: { productId: string; variants
         >
           {allSoldOut ? t.store.soldOut : !variant ? t.store.pickVariant : t.store.addToCart}
         </button>
+        <WishlistButton productId={productId} />
       </div>
     </div>
   );
