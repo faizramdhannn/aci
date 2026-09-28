@@ -7,6 +7,7 @@ import { ReviewsSection } from "@/components/store/reviews-section";
 import { getStoreProductBySlug, getStoreSettings, listStoreProducts } from "@/lib/store/data";
 import { relatedProducts } from "@/lib/store/catalog";
 import { ProductCard } from "@/components/store/product-card";
+import { ShareButtons } from "@/components/store/share-buttons";
 import { listReviews, ratingsByProduct } from "@/lib/store/reviews";
 import { formatRupiah } from "@/lib/store/money";
 import { getStoreDictionary } from "@/lib/i18n/server";
@@ -53,6 +54,9 @@ export default async function ProductPage({ params }: { params: Promise<{ slug: 
             <p className="mt-8 whitespace-pre-line text-sm leading-relaxed text-brown-soft">{product.description}</p>
           )}
           <p className="mt-6 text-xs text-brown-soft">{t.store.shippingNote}</p>
+          <div className="mt-6">
+            <ShareButtons title={product.title} />
+          </div>
         </div>
       </div>
       {related.length > 0 && (
