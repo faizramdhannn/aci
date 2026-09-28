@@ -44,7 +44,7 @@ export function HeroSlider({
   return (
     <section
       aria-roledescription="carousel"
-      className="relative mb-12 overflow-hidden rounded-3xl bg-brown/10"
+      className="relative mb-8 overflow-hidden rounded-2xl sm:mb-12 sm:rounded-3xl bg-brown/10"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -70,7 +70,7 @@ export function HeroSlider({
         go(index + (e.deltaX > 0 ? 1 : -1));
       }}
     >
-      <div className="relative aspect-[4/5] touch-pan-y select-none sm:aspect-[16/9]">
+      <div className="relative aspect-[16/9] touch-pan-y select-none">
         {banners.map((banner, i) => {
           const active = i === index;
           const title = banner.title || (i === 0 ? fallbackTitle : "");
@@ -92,18 +92,18 @@ export function HeroSlider({
                 className="object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-6 pb-10 text-white sm:p-10 sm:pb-12">
+              <div className="absolute inset-x-0 bottom-0 p-4 pb-7 text-white sm:p-10 sm:pb-12">
                 {title &&
                   (i === 0 ? (
-                    <h1 className="max-w-xl text-3xl font-semibold tracking-tight sm:text-5xl">{title}</h1>
+                    <h1 className="max-w-xl text-xl font-semibold tracking-tight sm:text-5xl">{title}</h1>
                   ) : (
-                    <p className="max-w-xl text-3xl font-semibold tracking-tight sm:text-5xl">{title}</p>
+                    <p className="max-w-xl text-xl font-semibold tracking-tight sm:text-5xl">{title}</p>
                   ))}
-                {subtitle && <p className="mt-2 max-w-md text-sm text-white/85 sm:text-base">{subtitle}</p>}
+                {subtitle && <p className="mt-1 line-clamp-1 max-w-md text-xs text-white/85 sm:mt-2 sm:line-clamp-none sm:text-base">{subtitle}</p>}
                 <Link
                   href={href}
                   tabIndex={active ? 0 : -1}
-                  className="mt-5 inline-block rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-black hover:opacity-90"
+                  className="mt-2 inline-block rounded-full bg-white px-4 py-1.5 text-xs sm:mt-5 sm:px-6 sm:py-2.5 sm:text-sm font-semibold text-black hover:opacity-90"
                 >
                   {cta}
                 </Link>
@@ -119,23 +119,23 @@ export function HeroSlider({
             type="button"
             aria-label="Previous"
             onClick={() => go(index - 1)}
-            className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-black shadow backdrop-blur transition hover:bg-white"
+            className="absolute left-2 top-1/2 hidden sm:left-3 sm:flex h-8 w-8 -translate-y-1/2 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/80 text-black shadow backdrop-blur transition hover:bg-white"
           >
-            <ChevronLeft className="h-5 w-5" />
+            <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
           <button
             type="button"
             aria-label="Next"
             onClick={() => go(index + 1)}
-            className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/80 text-black shadow backdrop-blur transition hover:bg-white"
+            className="absolute right-2 top-1/2 hidden sm:right-3 sm:flex h-8 w-8 -translate-y-1/2 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-white/80 text-black shadow backdrop-blur transition hover:bg-white"
           >
-            <ChevronRight className="h-5 w-5" />
+            <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </>
       )}
 
       {count > 1 && (
-        <div className="absolute inset-x-0 bottom-4 flex justify-center gap-2">
+        <div className="absolute inset-x-0 bottom-2 flex sm:bottom-4 justify-center gap-2">
           {banners.map((banner, i) => (
             <button
               key={banner.id}
