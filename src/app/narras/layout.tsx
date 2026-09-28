@@ -11,6 +11,7 @@ import { customerId } from "@/lib/auth";
 import { getCustomerById } from "@/lib/store/customers";
 import { CartProvider } from "@/lib/store/cart";
 import { AccountLink } from "@/components/store/account-link";
+import { WhatsappFloat } from "@/components/store/whatsapp-float";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { storeName } = await getStoreSettings();
@@ -35,6 +36,7 @@ export default async function StoreLayout({ children }: { children: React.ReactN
         </div>
       </header>
       <div className="flex-1">{children}</div>
+      <WhatsappFloat number={settings.whatsappNumber} />
       <footer className="mt-16 border-t border-brown/10 px-4 py-8 text-sm text-brown-soft sm:px-6">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <p>
