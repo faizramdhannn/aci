@@ -221,7 +221,8 @@ const en = {
   admin: {
     section: "by.narras",
     outfitSection: "Spill Outfit",
-    hubSection: "narras",
+    hubSection: "narras · General",
+    viewSite: "View site ↗",
     nav: { comments: "Comments", hub: "Front page", home: "Home", orders: "Orders", products: "Products", collections: "Collections", vouchers: "Vouchers", reviews: "Reviews", customers: "Customers", settings: "Store settings" },
     collections: {
       title: "Collections",
@@ -685,7 +686,8 @@ const id: StoreDictionary = {
   admin: {
     section: "by.narras",
     outfitSection: "Spill Outfit",
-    hubSection: "narras",
+    hubSection: "narras · Umum",
+    viewSite: "Lihat situs ↗",
     nav: { comments: "Komentar", hub: "Halaman depan", home: "Beranda", orders: "Pesanan", products: "Produk", collections: "Koleksi", vouchers: "Voucher", reviews: "Ulasan", customers: "Pelanggan", settings: "Pengaturan toko" },
     collections: {
       title: "Koleksi",
