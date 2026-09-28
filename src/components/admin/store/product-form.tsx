@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ImageIcon, X } from "lucide-react";
 import type { StoreCollection, StoreProduct, StoreVariant } from "@/types/store";
 import { ImageUploadField } from "@/components/editor/image-upload-field";
 import { Card, adminInput, primaryButton } from "@/components/admin/store/ui";
@@ -128,7 +128,14 @@ export function ProductForm({ product, collections }: { product?: StoreProduct; 
                     <button
                       type="button"
                       aria-label={p.removePhoto}
-                      onClick={() => set("images", draft.images.filter((x) => x !== src))}
+                      onClick={() =>
+                        setDraft((d) => ({
+                          ...d,
+                          images: d.images.filter((x) => x !== src),
+                          // A variant can't keep a photo that's no longer on the product.
+                          variants: d.variants.map((v) => (v.image === src ? { ...v, image: undefined } : v)),
+                        }))
+                      }
                       className="rounded-full bg-black/60 p-1 text-white"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -186,21 +193,52 @@ export function ProductForm({ product, collections }: { product?: StoreProduct; 
             </button>
           }
         >
+          <label className="mb-4 block max-w-xs text-sm">
+            <span className="mb-1 block text-xs text-brown-soft">{p.optionName}</span>
+            <input
+              maxLength={30}
+              value={draft.optionName ?? ""}
+              onChange={(e) => set("optionName", e.target.value)}
+              placeholder={p.optionNamePlaceholder}
+              className={adminInput}
+            />
+          </label>
+          <p className="mb-2 text-xs text-brown-soft">{p.variantsHint}</p>
           <div className="space-y-2">
-            <div className="grid grid-cols-[1fr_100px_32px] gap-2 text-xs text-brown-soft">
+            <div className="grid grid-cols-[40px_1fr_110px_80px_32px] gap-2 text-xs text-brown-soft">
+              <span>{p.variantPhoto}</span>
               <span>{p.variantName}</span>
+              <span>{p.variantPrice}</span>
               <span>{p.stock}</span>
             </div>
             {draft.variants.map((v, i) => (
-              <div key={v.id} className="grid grid-cols-[1fr_100px_32px] items-center gap-2">
+              <div key={v.id} className="grid grid-cols-[40px_1fr_110px_80px_32px] items-center gap-2">
+                <VariantPhotoPicker
+                  images={draft.images}
+                  value={v.image}
+                  onChange={(image) => setVariant(i, { image })}
+                  label={p.variantPhoto}
+                  noneLabel={p.variantPhotoNone}
+                />
                 <input
                   required
                   maxLength={60}
                   value={v.name}
                   onChange={(e) => setVariant(i, { name: e.target.value })}
-                  placeholder="Cream"
+                  placeholder="Flowers Art 1"
                   aria-label={p.variantName}
                   className={adminInput}
+                />
+                <input
+                  inputMode="numeric"
+                  value={v.price != null ? String(v.price) : ""}
+                  onChange={(e) => {
+                    const d = digits(e.target.value);
+                    setVariant(i, { price: d ? Number(d) : undefined });
+                  }}
+                  placeholder={draft.price ? String(draft.price) : "—"}
+                  aria-label={p.variantPrice}
+                  className={`${adminInput} tabular-nums`}
                 />
                 <input
                   required
@@ -280,5 +318,58 @@ export function ProductForm({ product, collections }: { product?: StoreProduct; 
         )}
       </div>
     </form>
+  );
+}
+
+/** Picks one of the product's photos for a variant (or none = use the product's cover). */
+function VariantPhotoPicker({
+  images,
+  value,
+  onChange,
+  label,
+  noneLabel,
+}: {
+  images: string[];
+  value?: string;
+  onChange: (image: string | undefined) => void;
+  label: string;
+  noneLabel: string;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        aria-label={label}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="relative flex h-10 w-10 items-center justify-center overflow-hidden rounded-lg border border-dashed border-brown/30 text-brown-soft hover:border-brown"
+      >
+        {value ? <Image src={value} alt="" fill sizes="40px" className="object-cover" /> : <ImageIcon className="h-4 w-4" />}
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full z-20 mt-1 w-56 rounded-xl border border-brown/10 bg-surface p-2 shadow-lg">
+          {images.length === 0 ? (
+            <p className="p-1 text-xs text-brown-soft">{noneLabel}</p>
+          ) : (
+            <div className="grid grid-cols-4 gap-1.5">
+              {images.map((src) => (
+                <button
+                  key={src}
+                  type="button"
+                  onClick={() => {
+                    onChange(src === value ? undefined : src);
+                    setOpen(false);
+                  }}
+                  className={`relative aspect-square overflow-hidden rounded-md border-2 ${src === value ? "border-orange" : "border-transparent"}`}
+                >
+                  <Image src={src} alt="" fill sizes="48px" className="object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

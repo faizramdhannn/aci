@@ -2,9 +2,15 @@
 
 export interface StoreVariant {
   id: string;
-  /** e.g. a colour: "Cream", "Dusty Pink". */
+  /** e.g. a colour or motif: "Cream", "Flowers Art 1". */
   name: string;
   stock: number;
+  /** One of the product's photos, shown when this variant is picked. */
+  image?: string;
+  /** Overrides the product price for this variant. */
+  price?: number;
+  compareAtPrice?: number;
+  sku?: string;
 }
 
 export type StoreProductStatus = "active" | "draft";
@@ -18,6 +24,8 @@ export interface StoreProduct {
   /** Optional "was" price, shown struck through when higher than price. */
   compareAtPrice?: number;
   images: string[];
+  /** What the variants differ by, shown above the picker ("Warna", "Motif"). Default: colour. */
+  optionName?: string;
   variants: StoreVariant[];
   /** Collections (e.g. Pashmina, Koleksi Ramadan) this product is listed in. */
   collectionIds?: string[];

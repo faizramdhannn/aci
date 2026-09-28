@@ -235,9 +235,9 @@ export async function placeOrder(input: {
       variantId: variant.id,
       title: product.title,
       variantName: variant.name,
-      price: product.price,
+      price: variant.price ?? product.price,
       qty: line.qty,
-      image: product.images[0],
+      image: variant.image ?? product.images[0],
     });
   }
 

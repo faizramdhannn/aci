@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Minus, Plus } from "lucide-react";
 import type { StoreVariant } from "@/types/store";
 import { useCartContext } from "@/lib/store/cart";
@@ -9,11 +10,23 @@ import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
 import { useToast } from "@/components/ui/toast-provider";
 import { format } from "@/lib/i18n/dictionaries";
 
-export function AddToCart({ productId, variants }: { productId: string; variants: StoreVariant[] }) {
+/** Variant picker + quantity + add button. The selected variant is owned by the parent (it drives photo and price too). */
+export function AddToCart({
+  productId,
+  variants,
+  optionName,
+  variantId,
+  onVariantChange,
+}: {
+  productId: string;
+  variants: StoreVariant[];
+  optionName?: string;
+  variantId: string | null;
+  onVariantChange: (id: string) => void;
+}) {
   const t = useStoreDictionary();
   const toast = useToast();
   const { lines: cart, addToCart } = useCartContext();
-  const [variantId, setVariantId] = useState(() => variants.find((v) => v.stock > 0)?.id ?? null);
   const [qty, setQty] = useState(1);
 
   const variant = variants.find((v) => v.id === variantId);
@@ -25,7 +38,7 @@ export function AddToCart({ productId, variants }: { productId: string; variants
     <div className="space-y-5">
       <fieldset>
         <legend className="mb-2 text-sm font-medium text-brown">
-          {t.store.colour}
+          {optionName || t.store.colour}
           {variant && <span className="ml-2 font-normal text-brown-soft">{variant.name}</span>}
         </legend>
         <div className="flex flex-wrap gap-2">
@@ -35,14 +48,19 @@ export function AddToCart({ productId, variants }: { productId: string; variants
               type="button"
               disabled={v.stock === 0}
               onClick={() => {
-                setVariantId(v.id);
+                onVariantChange(v.id);
                 setQty(1);
               }}
               aria-pressed={v.id === variantId}
-              className={`rounded-full border px-4 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:line-through disabled:opacity-40 ${
-                v.id === variantId ? "border-brown bg-brown text-cream" : "border-brown/20 text-brown hover:border-brown/50"
-              }`}
+              className={`flex items-center gap-2 rounded-full border text-sm transition-colors disabled:cursor-not-allowed disabled:line-through disabled:opacity-40 ${
+                v.image ? "py-1 pl-1 pr-4" : "px-4 py-2"
+              } ${v.id === variantId ? "border-brown bg-brown text-cream" : "border-brown/20 text-brown hover:border-brown/50"}`}
             >
+              {v.image && (
+                <span className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-brown/5">
+                  <Image src={v.image} alt="" fill sizes="32px" className="object-cover" />
+                </span>
+              )}
               {v.name}
             </button>
           ))}

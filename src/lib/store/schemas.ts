@@ -7,7 +7,21 @@ export const variantSchema = z.object({
   id: z.string().min(1).max(64),
   name: z.string().trim().min(1).max(60),
   stock: z.number().int().min(0).max(100_000),
-});
+  image: z.string().max(1000).optional().nullable(),
+  price: rupiah.optional().nullable(),
+  compareAtPrice: rupiah.optional().nullable(),
+  sku: z.string().trim().max(60).optional().nullable(),
+})
+  // Store empty overrides as absent, so the product's own price/photo applies.
+  .transform((v) => ({
+    id: v.id,
+    name: v.name,
+    stock: v.stock,
+    ...(v.image ? { image: v.image } : {}),
+    ...(v.price != null ? { price: v.price } : {}),
+    ...(v.compareAtPrice ? { compareAtPrice: v.compareAtPrice } : {}),
+    ...(v.sku ? { sku: v.sku } : {}),
+  }));
 
 export const productSchema = z.object({
   title: z.string().trim().min(1).max(120),
@@ -15,7 +29,8 @@ export const productSchema = z.object({
   price: rupiah,
   compareAtPrice: rupiah.optional().nullable(),
   images: z.array(z.string().min(1).max(1000)).max(10),
-  variants: z.array(variantSchema).min(1).max(50),
+  variants: z.array(variantSchema).min(1).max(100),
+  optionName: z.string().trim().max(30).optional(),
   collectionIds: z.array(z.string().min(1).max(64)).max(20).optional(),
   status: z.enum(["active", "draft"]),
 });

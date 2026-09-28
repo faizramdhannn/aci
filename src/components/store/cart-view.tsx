@@ -75,7 +75,7 @@ export function CartView({
   const loading = lines.length > 0 && products === null;
   const valid = rows.filter((r) => r.product && r.variant && r.variant.stock >= r.line.qty);
   const hasProblems = !loading && valid.length !== rows.length;
-  const subtotal = valid.reduce((sum, r) => sum + r.product!.price * r.line.qty, 0);
+  const subtotal = valid.reduce((sum, r) => sum + (r.variant!.price ?? r.product!.price) * r.line.qty, 0);
   // The preview discount was computed for the subtotal at the time; drop it if the cart changed since.
   const [voucherFor, setVoucherFor] = useState(0);
   const activeVoucher = voucher && voucherFor === subtotal ? voucher : null;
@@ -188,7 +188,9 @@ export function CartView({
           return (
             <li key={`${line.productId}:${line.variantId}`} className="flex gap-4 py-4">
               <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-xl bg-brown/5">
-                {product?.image && <Image src={product.image} alt="" fill sizes="80px" className="object-cover" />}
+                {(variant?.image ?? product?.image) && (
+                  <Image src={(variant?.image ?? product?.image)!} alt="" fill sizes="80px" className="object-cover" />
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 {product ? (
@@ -202,7 +204,7 @@ export function CartView({
                 {unavailable ? (
                   <p className="mt-1 text-xs font-medium text-orange">{t.store.unavailableLine}</p>
                 ) : (
-                  product && <p className="mt-1 text-sm font-semibold text-brown">{formatRupiah(product.price * line.qty)}</p>
+                  product && <p className="mt-1 text-sm font-semibold text-brown">{formatRupiah((variant?.price ?? product.price) * line.qty)}</p>
                 )}
                 <div className="mt-2 flex items-center gap-3">
                   {!unavailable && variant && (

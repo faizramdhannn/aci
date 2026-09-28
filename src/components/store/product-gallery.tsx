@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Image from "next/image";
 
-export function ProductGallery({ images, title }: { images: string[]; title: string }) {
-  const [active, setActive] = useState(0);
+/** Remount with a new `key` to jump to `initial` (e.g. when a variant with its own photo is picked). */
+export function ProductGallery({ images, title, initial }: { images: string[]; title: string; initial?: string }) {
+  const [active, setActive] = useState(() => Math.max(0, initial ? images.indexOf(initial) : 0));
   const current = images[active] ?? images[0];
   return (
     <div>
