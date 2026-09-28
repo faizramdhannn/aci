@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SplashGate } from "@/components/storefront/splash-gate";
@@ -11,7 +11,15 @@ import { siteUrl } from "@/lib/site-url";
 import { fontVariables } from "@/lib/fonts";
 import { getLocale } from "@/lib/i18n/server";
 import { getSiteSettings } from "@/lib/data";
+import { HUB_NAME } from "@/config/site";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fdf9e3" },
+    { media: "(prefers-color-scheme: dark)", color: "#211712" },
+  ],
+};
 
 export async function generateMetadata(): Promise<Metadata> {
   const [locale, settings] = await Promise.all([getLocale(), getSiteSettings()]);
@@ -30,6 +38,8 @@ export async function generateMetadata(): Promise<Metadata> {
       alternateLocale: locale === "id" ? "en_US" : "id_ID",
     },
     twitter: { card: "summary_large_image" },
+    // Home-screen app on iOS: full screen, with the status bar over the page colour.
+    appleWebApp: { capable: true, title: HUB_NAME, statusBarStyle: "default" },
   };
 }
 
