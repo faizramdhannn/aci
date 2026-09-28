@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Minus, Plus } from "lucide-react";
 import type { StoreVariant } from "@/types/store";
-import { addToCart, useCart } from "@/lib/store/cart";
+import { useCartContext } from "@/lib/store/cart";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
 import { useToast } from "@/components/ui/toast-provider";
 import { format } from "@/lib/i18n/dictionaries";
@@ -11,7 +11,7 @@ import { format } from "@/lib/i18n/dictionaries";
 export function AddToCart({ productId, variants }: { productId: string; variants: StoreVariant[] }) {
   const t = useStoreDictionary();
   const toast = useToast();
-  const cart = useCart();
+  const { lines: cart, addToCart } = useCartContext();
   const [variantId, setVariantId] = useState(() => variants.find((v) => v.stock > 0)?.id ?? null);
   const [qty, setQty] = useState(1);
 
@@ -81,7 +81,7 @@ export function AddToCart({ productId, variants }: { productId: string; variants
           disabled={!variant || available === 0}
           onClick={() => {
             if (!variant) return;
-            addToCart({ productId, variantId: variant.id, qty }, variant.stock);
+            if (!addToCart({ productId, variantId: variant.id, qty }, variant.stock)) return;
             setQty(1);
             toast(t.store.added);
           }}

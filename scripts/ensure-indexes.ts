@@ -48,6 +48,12 @@ export async function ensureIndexes(db: Db) {
 
   await Promise.all([
     db.collection("shoppableImages").createIndex({ slug: 1 }, { unique: true }),
+    db.collection("customers").createIndex({ email: 1 }, { unique: true }),
+    db.collection("storeOrders").createIndex({ customerId: 1, createdAt: -1 }),
+    db.collection("storeProducts").createIndex({ slug: 1 }, { unique: true }),
+    db.collection("comments").createIndex({ target: 1, targetId: 1, createdAt: -1 }),
+    // Reset links expire after an hour; Mongo removes the stale records.
+    db.collection("passwordResetTokens").createIndex({ expiresAtDate: 1 }, { expireAfterSeconds: 0 }),
     db.collection("shoppableImages").createIndex({ status: 1, createdAt: -1 }),
     db.collection("hotspots").createIndex({ shoppableImageId: 1 }),
     db.collection("hotspots").createIndex({ categoryIds: 1 }),

@@ -1,5 +1,6 @@
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
+import { auth, isAdminSession } from "@/lib/auth";
 import type { Metadata } from "next";
 import { getOrderById, getStoreSettings } from "@/lib/store/data";
 import { formatRupiah } from "@/lib/store/money";
@@ -14,11 +15,21 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   return { title: order?.number, robots: { index: false } };
 }
 
-/** The buyer's receipt. The URL holds the order's random id, so only people given the link can see it. */
+/** The buyer's receipt: visible to the account that placed it and to the admin. */
 export default async function OrderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [order, settings, t] = await Promise.all([getOrderById(id), getStoreSettings(), getStoreDictionary()]);
+  const [order, settings, t, session] = await Promise.all([
+    getOrderById(id),
+    getStoreSettings(),
+    getStoreDictionary(),
+    auth(),
+  ]);
   if (!order) notFound();
+  // Orders from before accounts existed stay reachable by their private link.
+  if (order.customerId && !isAdminSession(session) && session?.customerId !== order.customerId) {
+    if (!session) redirect(`/narras/login?callbackUrl=${encodeURIComponent(`/narras/order/${id}`)}`);
+    notFound();
+  }
 
   const whatsappUrl = settings.whatsappNumber
     ? whatsappLink(settings.whatsappNumber, orderMessage(order, `${siteUrl}/narras/order/${order._id}`))

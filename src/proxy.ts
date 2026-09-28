@@ -1,10 +1,12 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
+import type { Session } from "next-auth";
+import { auth, isAdminSession } from "@/lib/auth";
 
-export default auth((request: NextRequest & { auth?: unknown }) => {
+export default auth((request: NextRequest & { auth?: Session | null }) => {
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith("/admin") && !request.auth) {
+  // A signed-in by.narras customer is not an admin.
+  if (pathname.startsWith("/admin") && !isAdminSession(request.auth)) {
     const loginUrl = new URL("/admin-login", request.url);
     loginUrl.searchParams.set("callbackUrl", pathname);
     return NextResponse.redirect(loginUrl);

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { adminSession } from "@/lib/auth";
 import { storeSettingsSchema } from "@/lib/store/schemas";
 import { getStoreSettings, updateStoreSettings } from "@/lib/store/data";
 import { deleteSettingImageIfUnused } from "@/lib/store/cleanup";
 
 export async function PATCH(request: Request) {
-  const session = await auth();
+  const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const parsed = storeSettingsSchema.safeParse(await request.json().catch(() => null));

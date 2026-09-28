@@ -5,8 +5,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Minus, Plus } from "lucide-react";
-import type { StoreVariant } from "@/types/store";
-import { clearCart, replaceCart, setCartQty, useCart, type CartLine } from "@/lib/store/cart";
+import type { CustomerAddress, StoreVariant } from "@/types/store";
+import { useCartContext, type CartLine } from "@/lib/store/cart";
 import { formatRupiah } from "@/lib/store/money";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
 
@@ -24,10 +24,23 @@ const inputClass =
 
 type ErrorCode = keyof ReturnType<typeof useStoreDictionary>["store"]["errors"];
 
-export function CartView() {
+export function CartView({
+  addresses,
+  defaultAddressId,
+  prefill,
+}: {
+  addresses: CustomerAddress[];
+  defaultAddressId?: string;
+  /** The account's name and phone, to start a new address with. */
+  prefill: { name: string; phone: string };
+}) {
   const t = useStoreDictionary();
   const router = useRouter();
-  const lines = useCart();
+  const { lines, setCartQty, replaceCart, clearCartLocally } = useCartContext();
+  const [addressId, setAddressId] = useState<string>(
+    defaultAddressId ?? addresses[0]?.id ?? "new"
+  );
+  const [saveNew, setSaveNew] = useState(true);
   const [products, setProducts] = useState<CartProduct[] | null>(null);
   const [placing, setPlacing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -81,21 +94,42 @@ export function CartView() {
     }
     const form = new FormData(e.currentTarget);
     const text = (name: string) => String(form.get(name) ?? "").trim();
+    const note = text("note") || undefined;
+    let chosen = addresses.find((a) => a.id === addressId);
     setPlacing(true);
     setError(null);
     try {
+      if (!chosen) {
+        const fresh = {
+          label: t.account.defaultLabel,
+          recipient: text("name"),
+          phone: text("phone"),
+          address: text("address"),
+          city: text("city"),
+          postalCode: text("postalCode"),
+        };
+        if (saveNew) {
+          const saved = await fetch("/api/store/account/addresses", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(fresh),
+          });
+          if (saved.ok) chosen = await saved.json();
+        }
+        chosen ??= { id: "", ...fresh };
+      }
       const res = await fetch("/api/store/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           lines: valid.map((r) => r.line),
           customer: {
-            name: text("name"),
-            phone: text("phone"),
-            address: text("address"),
-            city: text("city"),
-            postalCode: text("postalCode"),
-            note: text("note") || undefined,
+            name: chosen.recipient,
+            phone: chosen.phone,
+            address: chosen.address,
+            city: chosen.city,
+            postalCode: chosen.postalCode,
+            note,
           },
         }),
       });
@@ -108,7 +142,7 @@ export function CartView() {
         return;
       }
       setPlaced(true);
-      clearCart();
+      clearCartLocally();
       // Opening WhatsApp from here would be popup-blocked after the await;
       // the order page shows the button instead.
       router.push(`/narras/order/${data.id}`);
@@ -202,9 +236,55 @@ export function CartView() {
         <p className="text-xs text-brown-soft">{t.store.shippingNote}</p>
 
         <h2 className="pt-3 text-sm font-semibold text-brown">{t.store.checkoutTitle}</h2>
-        <input name="name" required minLength={2} maxLength={80} autoComplete="name" placeholder={t.store.name} aria-label={t.store.name} className={inputClass} />
+        {addresses.length > 0 && (
+          <div className="space-y-2" role="radiogroup" aria-label={t.store.checkoutTitle}>
+            {addresses.map((a) => (
+              <label
+                key={a.id}
+                className={`flex cursor-pointer gap-3 rounded-xl border p-3 text-sm ${
+                  addressId === a.id ? "border-brown bg-brown/5" : "border-brown/15"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="addressChoice"
+                  checked={addressId === a.id}
+                  onChange={() => setAddressId(a.id)}
+                  className="mt-1 accent-[var(--color-brown)]"
+                />
+                <span className="min-w-0">
+                  <span className="block font-semibold text-brown">
+                    {a.label} · {a.recipient}
+                  </span>
+                  <span className="block text-xs text-brown-soft">{a.phone}</span>
+                  <span className="block text-xs text-brown-soft">
+                    {a.address}, {a.city} {a.postalCode}
+                  </span>
+                </span>
+              </label>
+            ))}
+            <label
+              className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm ${
+                addressId === "new" ? "border-brown bg-brown/5" : "border-brown/15"
+              }`}
+            >
+              <input
+                type="radio"
+                name="addressChoice"
+                checked={addressId === "new"}
+                onChange={() => setAddressId("new")}
+                className="accent-[var(--color-brown)]"
+              />
+              <span className="font-medium text-brown">+ {t.account.newAddress}</span>
+            </label>
+          </div>
+        )}
+        {addressId === "new" && (
+          <>
+        <input name="name" defaultValue={prefill.name} required minLength={2} maxLength={80} autoComplete="name" placeholder={t.store.name} aria-label={t.store.name} className={inputClass} />
         <input
           name="phone"
+          defaultValue={prefill.phone}
           required
           type="tel"
           inputMode="tel"
@@ -239,6 +319,12 @@ export function CartView() {
             className={inputClass}
           />
         </div>
+            <label className="flex items-center gap-2 text-xs text-brown-soft">
+              <input type="checkbox" checked={saveNew} onChange={(e) => setSaveNew(e.target.checked)} className="accent-[var(--color-brown)]" />
+              {t.account.saveAddress}
+            </label>
+          </>
+        )}
         <input name="note" maxLength={300} placeholder={t.store.note} aria-label={t.store.note} className={inputClass} />
 
         {error && (

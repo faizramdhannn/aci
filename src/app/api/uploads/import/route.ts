@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { adminSession } from "@/lib/auth";
 import { uploadImage, UploadValidationError } from "@/lib/storage";
 import { importImageFromUrl, ImportUrlError } from "@/lib/import-from-url";
 
 const bodySchema = z.object({ url: z.string().min(1) });
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const json = await request.json().catch(() => null);

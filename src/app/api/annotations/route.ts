@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { adminSession } from "@/lib/auth";
 import { upsertAnnotation } from "@/lib/data";
 import type { Annotation } from "@/types";
 
@@ -31,7 +31,7 @@ const textSchema = z.object({
 const bodySchema = z.union([arrowSchema, textSchema]);
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const json = await request.json().catch(() => null);

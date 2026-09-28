@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Card, PageHeader, formatDate } from "@/components/admin/store/ui";
-import { customersFromOrders, listOrders } from "@/lib/store/data";
+import { listOrders, SALE_STATUSES } from "@/lib/store/data";
+import { listCustomers } from "@/lib/store/customers";
 import { formatRupiah } from "@/lib/store/money";
 import { whatsappLink } from "@/lib/store/whatsapp";
 import { getLocale, getStoreDictionary } from "@/lib/i18n/server";
@@ -12,9 +13,20 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function CustomersPage() {
-  const [t, locale, orders] = await Promise.all([getStoreDictionary(), getLocale(), listOrders()]);
-  const customers = customersFromOrders(orders);
+  const [t, locale, customers, orders] = await Promise.all([
+    getStoreDictionary(),
+    getLocale(),
+    listCustomers(),
+    listOrders(),
+  ]);
   const c = t.admin.customers;
+  const statsFor = (id: string) => {
+    const own = orders.filter((o) => o.customerId === id && o.status !== "cancelled");
+    return {
+      orders: own.length,
+      spent: own.filter((o) => SALE_STATUSES.includes(o.status)).reduce((s, o) => s + o.total, 0),
+    };
+  };
 
   return (
     <div className="max-w-5xl">
@@ -25,32 +37,44 @@ export default async function CustomersPage() {
           <p className="p-5 text-sm text-brown-soft">{c.empty}</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[640px] text-sm">
+            <table className="w-full min-w-[720px] text-sm">
               <thead className="text-left text-xs text-brown-soft">
                 <tr className="border-b border-brown/10">
                   <th className="px-4 py-2.5 font-medium">{c.name}</th>
+                  <th className="px-4 py-2.5 font-medium">{c.email}</th>
                   <th className="px-4 py-2.5 font-medium">{c.phone}</th>
-                  <th className="px-4 py-2.5 font-medium">{c.city}</th>
                   <th className="px-4 py-2.5 text-right font-medium">{c.orders}</th>
                   <th className="px-4 py-2.5 text-right font-medium">{c.spent}</th>
-                  <th className="px-4 py-2.5 font-medium">{c.last}</th>
+                  <th className="px-4 py-2.5 font-medium">{c.joined}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-brown/10">
-                {customers.map((cu) => (
-                  <tr key={cu.phone}>
-                    <td className="px-4 py-3 font-medium text-brown">{cu.name}</td>
-                    <td className="px-4 py-3">
-                      <a href={whatsappLink(cu.phone, `Halo ${cu.name}, `)} target="_blank" rel="noopener noreferrer" className="text-orange hover:underline">
-                        {cu.phone}
-                      </a>
-                    </td>
-                    <td className="px-4 py-3 text-brown-soft">{cu.city}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-brown">{cu.orders}</td>
-                    <td className="px-4 py-3 text-right tabular-nums text-brown">{formatRupiah(cu.spent)}</td>
-                    <td className="whitespace-nowrap px-4 py-3 text-brown-soft">{formatDate(cu.lastOrderAt, locale, false)}</td>
-                  </tr>
-                ))}
+                {customers.map((cu) => {
+                  const stats = statsFor(cu._id);
+                  return (
+                    <tr key={cu._id}>
+                      <td className="px-4 py-3 font-medium text-brown">{cu.name}</td>
+                      <td className="px-4 py-3 text-brown-soft">{cu.email}</td>
+                      <td className="px-4 py-3">
+                        {cu.phone ? (
+                          <a
+                            href={whatsappLink(cu.phone, `Halo ${cu.name}, `)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-orange hover:underline"
+                          >
+                            {cu.phone}
+                          </a>
+                        ) : (
+                          <span className="text-brown-soft">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-brown">{stats.orders}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-brown">{formatRupiah(stats.spent)}</td>
+                      <td className="whitespace-nowrap px-4 py-3 text-brown-soft">{formatDate(cu.createdAt, locale, false)}</td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { auth } from "@/lib/auth";
+import { adminSession } from "@/lib/auth";
 import { productSchema } from "@/lib/store/schemas";
 import { createStoreProduct, generateProductSlug } from "@/lib/store/data";
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const parsed = productSchema.safeParse(await request.json().catch(() => null));

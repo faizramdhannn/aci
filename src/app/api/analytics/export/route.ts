@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { adminSession } from "@/lib/auth";
 import { getProductPerformance } from "@/lib/data";
 
 function csvCell(value: string): string {
@@ -7,7 +7,7 @@ function csvCell(value: string): string {
 }
 
 export async function GET() {
-  const session = await auth();
+  const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const rows = await getProductPerformance();

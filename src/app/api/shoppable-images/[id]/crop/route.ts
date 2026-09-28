@@ -3,7 +3,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import sharp from "sharp";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { adminSession } from "@/lib/auth";
 import { getShoppableImageById, reframeShoppableImage } from "@/lib/data";
 import { uploadImage } from "@/lib/storage";
 import { isFullCrop } from "@/lib/crop";
@@ -36,7 +36,7 @@ async function readSourceImage(imageUrl: string, requestUrl: string): Promise<Bu
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await auth();
+  const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { id } = await params;

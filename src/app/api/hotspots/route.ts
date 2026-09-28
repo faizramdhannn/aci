@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { adminSession } from "@/lib/auth";
 import { upsertHotspot } from "@/lib/data";
 import type { Hotspot } from "@/types";
 
@@ -23,7 +23,7 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
-  const session = await auth();
+  const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const json = await request.json().catch(() => null);

@@ -56,6 +56,8 @@ export interface StoreOrder {
   shippingCost?: number;
   total: number;
   customer: OrderCustomer;
+  /** The account that placed it (orders from before accounts existed have none). */
+  customerId?: string;
   status: OrderStatus;
   trackingNumber?: string;
   courier?: string;
@@ -110,4 +112,38 @@ export interface ProductComment {
   body: string;
   status: CommentStatus;
   createdAt: string;
+}
+
+export interface CustomerAddress {
+  id: string;
+  /** e.g. "Rumah", "Kantor". */
+  label: string;
+  recipient: string;
+  phone: string;
+  address: string;
+  city: string;
+  postalCode: string;
+}
+
+export interface CartItem {
+  productId: string;
+  variantId: string;
+  qty: number;
+}
+
+/** A by.narras shopper account. */
+export interface Customer {
+  _id: string;
+  /** Lowercased; unique. */
+  email: string;
+  name: string;
+  phone: string;
+  /** Absent for Google-only accounts until they set one. */
+  passwordHash?: string;
+  googleId?: string;
+  addresses: CustomerAddress[];
+  defaultAddressId?: string;
+  cart: CartItem[];
+  createdAt: string;
+  updatedAt: string;
 }

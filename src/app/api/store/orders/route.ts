@@ -3,9 +3,13 @@ import { checkoutSchema } from "@/lib/store/schemas";
 import { getStoreSettings, OrderError, placeOrder } from "@/lib/store/data";
 import { orderMessage, whatsappLink } from "@/lib/store/whatsapp";
 import { allowRateLimitedHit } from "@/lib/rate-limit";
+import { customerId } from "@/lib/auth";
+import { setCart } from "@/lib/store/customers";
 
-/** Public checkout: records the order, reserves stock, and returns the WhatsApp link to send it. */
+/** Checkout for signed-in customers: records the order, reserves stock, and returns the WhatsApp link to send it. */
 export async function POST(request: Request) {
+  const buyer = await customerId();
+  if (!buyer) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   if (!(await allowRateLimitedHit(ip, { scope: "order", max: 5 }))) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
@@ -18,7 +22,8 @@ export async function POST(request: Request) {
   }
 
   try {
-    const order = await placeOrder(parsed.data);
+    const order = await placeOrder({ ...parsed.data, customerId: buyer });
+    await setCart(buyer, []);
     const settings = await getStoreSettings();
     const orderUrl = `${new URL(request.url).origin}/narras/order/${order._id}`;
     const whatsappUrl = settings.whatsappNumber ? whatsappLink(settings.whatsappNumber, orderMessage(order, orderUrl)) : null;

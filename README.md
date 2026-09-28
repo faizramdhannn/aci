@@ -184,6 +184,15 @@ The site now opens on a hub (`/`) after the "narras" splash, with two cards:
 
 Set the WhatsApp number in **Admin → by.narras → Store settings** before sharing the store.
 
+### Customer accounts
+
+- Adding to cart and checking out require a by.narras account (email + password, or Google). The cart is saved on the account, so it follows the shopper across devices.
+- `/narras/account`: orders, profile, saved addresses (with a default), and password change. Google-only accounts can set a password there.
+- Forgot password emails a one-hour, one-time link via Resend (`RESEND_API_KEY`, `RESEND_FROM`). Without them, local development prints the link in the server log.
+- Google sign-in needs `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` (redirect URI `https://<domain>/api/auth/callback/google`); the button only appears when they're set.
+- Admin and customers share one NextAuth setup, but every session has a role: customers can't reach `/admin` or admin APIs.
+- Run `npm run db:indexes` once so customer emails are unique and old reset tokens expire.
+
 ## Known limitations
 
 Compared to the full [PRD](docs/PRD.md), these are intentionally simplified to ship a working MVP:

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { adminSession } from "@/lib/auth";
 import { deleteImageIfUnused, getSiteSettings, updateSiteSettings } from "@/lib/data";
 
 const optionalUrl = z.union([z.literal(""), z.string().url()]).optional();
@@ -17,7 +17,7 @@ const patchSchema = z.object({
 });
 
 export async function PATCH(request: Request) {
-  const session = await auth();
+  const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const json = await request.json().catch(() => null);

@@ -209,6 +209,7 @@ async function nextOrderNumber(): Promise<string> {
 export async function placeOrder(input: {
   lines: StockLine[];
   customer: OrderCustomer;
+  customerId?: string;
 }): Promise<StoreOrder> {
   // Merge duplicate lines for the same variant.
   const merged = new Map<string, StockLine>();
@@ -249,6 +250,7 @@ export async function placeOrder(input: {
     subtotal,
     total: subtotal,
     customer: input.customer,
+    ...(input.customerId ? { customerId: input.customerId } : {}),
     status: "pending",
     createdAt: now,
     updatedAt: now,
@@ -272,6 +274,16 @@ export async function listOrders(opts: { status?: OrderStatus } = {}): Promise<S
     .find(opts.status ? { status: opts.status } : {})
     .sort({ createdAt: -1 })
     .toArray();
+}
+
+export async function listOrdersForCustomer(customerId: string): Promise<StoreOrder[]> {
+  const db = await getDb();
+  if (!db) {
+    return getMemoryStore()
+      .storeOrders.filter((o) => o.customerId === customerId)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  return db.collection<StoreOrder>(ORDERS).find({ customerId }).sort({ createdAt: -1 }).toArray();
 }
 
 export async function getOrderById(id: string): Promise<StoreOrder | null> {

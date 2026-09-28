@@ -6,6 +6,10 @@ import { CartLink } from "@/components/store/cart-link";
 import { SiteSwitcher } from "@/components/navigation/site-switcher";
 import { HUB_NAME } from "@/config/site";
 import { getStoreSettings } from "@/lib/store/data";
+import { customerId } from "@/lib/auth";
+import { getCustomerById } from "@/lib/store/customers";
+import { CartProvider } from "@/lib/store/cart";
+import { AccountLink } from "@/components/store/account-link";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { storeName } = await getStoreSettings();
@@ -13,15 +17,18 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const settings = await getStoreSettings();
+  const [settings, id] = await Promise.all([getStoreSettings(), customerId()]);
+  const customer = id ? await getCustomerById(id) : null;
   return (
-    <>
+    // Keyed by account so logging in/out starts from that account's saved cart.
+    <CartProvider key={customer?._id ?? "guest"} initial={customer?.cart ?? []} signedIn={Boolean(customer)}>
       <header className="sticky top-0 z-40 border-b border-brown/10 bg-cream/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <SiteSwitcher current="store" compact />
           <div className="flex items-center gap-1">
             <LanguageToggle />
             <ThemeToggle />
+            <AccountLink name={customer?.name} />
             <CartLink />
           </div>
         </div>
@@ -44,6 +51,6 @@ export default async function StoreLayout({ children }: { children: React.ReactN
           </div>
         </div>
       </footer>
-    </>
+    </CartProvider>
   );
 }
