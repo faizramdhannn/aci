@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { ToastProvider } from "@/components/ui/toast-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
-import { SplashScreen } from "@/components/storefront/splash-screen";
-import { SPLASH_COOKIE } from "@/lib/splash";
-import { HUB_NAME } from "@/config/site";
+import { SplashGate } from "@/components/storefront/splash-gate";
+import { SPLASH_COOKIES, type SplashBrand } from "@/lib/splash";
+import { getStoreSettings } from "@/lib/store/data";
 import { cookies } from "next/headers";
 import { siteUrl } from "@/lib/site-url";
 import { fontVariables } from "@/lib/fonts";
@@ -32,14 +32,22 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [locale, cookieStore] = await Promise.all([getLocale(), cookies()]);
-  const showSplash = !cookieStore.get(SPLASH_COOKIE);
+  const [locale, cookieStore, site, store] = await Promise.all([
+    getLocale(),
+    cookies(),
+    getSiteSettings(),
+    getStoreSettings(),
+  ]);
+  const seen = (Object.keys(SPLASH_COOKIES) as SplashBrand[]).filter((b) => cookieStore.get(SPLASH_COOKIES[b]));
 
   return (
     <html lang={locale} className={`${fontVariables} h-full antialiased`} suppressHydrationWarning>
       <body className="min-h-full flex flex-col bg-cream text-brown" suppressHydrationWarning>
         <LocaleProvider locale={locale}>
-          {showSplash && <SplashScreen word={HUB_NAME} />}
+          <SplashGate
+            words={{ outfit: site.siteName.toLowerCase(), store: store.storeName }}
+            seen={seen}
+          />
           <ToastProvider>{children}</ToastProvider>
         </LocaleProvider>
       </body>

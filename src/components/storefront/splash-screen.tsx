@@ -1,8 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname } from "next/navigation";
-import { SPLASH_COOKIE } from "@/lib/splash";
 
 const MIN_VISIBLE_MS = 2500;
 const MAX_WAIT_MS = 7000;
@@ -22,15 +20,21 @@ function wavePath(level: number, phase: number) {
  * (no max-age, so it's cleared when the browser closes) lets the server skip
  * rendering it entirely on later page views.
  */
-export function SplashScreen({ word }: { word: string }) {
-  const pathname = usePathname();
+export function SplashScreen({
+  word,
+  cookieName,
+  onDone,
+}: {
+  word: string;
+  cookieName: string;
+  onDone?: () => void;
+}) {
+  const onDoneRef = useRef(onDone);
   const [phase, setPhase] = useState<"showing" | "leaving" | "gone">("showing");
   const waveRef = useRef<SVGPathElement>(null);
-  const isAdmin = pathname.startsWith("/admin");
 
   useEffect(() => {
-    if (isAdmin) return;
-    document.cookie = `${SPLASH_COOKIE}=1; path=/; samesite=lax`;
+    document.cookie = `${cookieName}=1; path=/; samesite=lax`;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
@@ -57,6 +61,7 @@ export function SplashScreen({ word }: { word: string }) {
       window.setTimeout(() => {
         setPhase("gone");
         document.body.style.overflow = previousOverflow;
+        onDoneRef.current?.();
       }, FADE_MS);
     }
 
@@ -81,9 +86,9 @@ export function SplashScreen({ word }: { word: string }) {
       cancelAnimationFrame(raf);
       document.body.style.overflow = previousOverflow;
     };
-  }, [isAdmin]);
+  }, [cookieName]);
 
-  if (isAdmin || phase === "gone") return null;
+  if (phase === "gone") return null;
 
   const text = (extra: React.SVGProps<SVGTextElement>) => (
     <text
