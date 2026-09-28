@@ -82,6 +82,8 @@ export interface StoreSettings {
 export interface HubSettings {
   outfitImage?: string;
   storeImage?: string;
+  /** by.narras logo used in the site switcher and store header. Empty = text wordmark. */
+  storeLogo?: string;
 }
 
 export type CommentTarget = "look" | "product";

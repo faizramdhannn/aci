@@ -3,9 +3,9 @@ import Link from "next/link";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { ThemeToggle } from "@/components/navigation/theme-toggle";
 import { CartLink } from "@/components/store/cart-link";
+import { SiteSwitcher } from "@/components/navigation/site-switcher";
 import { HUB_NAME } from "@/config/site";
 import { getStoreSettings } from "@/lib/store/data";
-import { getStoreDictionary } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { storeName } = await getStoreSettings();
@@ -13,19 +13,12 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function StoreLayout({ children }: { children: React.ReactNode }) {
-  const [settings, t] = await Promise.all([getStoreSettings(), getStoreDictionary()]);
+  const settings = await getStoreSettings();
   return (
     <>
       <header className="sticky top-0 z-40 border-b border-brown/10 bg-cream/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <div className="flex items-center gap-3">
-            <Link href="/" className="hidden text-xs text-brown-soft hover:text-brown sm:block" aria-label={HUB_NAME}>
-              ← {t.store.nav.backToHub}
-            </Link>
-            <Link href="/narras" className="text-xl font-semibold tracking-tight text-brown">
-              {settings.storeName}
-            </Link>
-          </div>
+          <SiteSwitcher current="store" compact />
           <div className="flex items-center gap-1">
             <LanguageToggle />
             <ThemeToggle />

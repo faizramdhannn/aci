@@ -1,23 +1,16 @@
-import Link from "next/link";
 import { DesktopNavLinks, FavoritesNavLink } from "@/components/navigation/desktop-nav-links";
 import { SearchPopover } from "@/components/navigation/search-popover";
 import { ThemeToggle } from "@/components/navigation/theme-toggle";
 import { LanguageToggle } from "@/components/i18n/language-toggle";
-import { Logo } from "@/components/navigation/logo";
-import { getSiteSettings } from "@/lib/data";
+import { SiteSwitcher } from "@/components/navigation/site-switcher";
 
 export async function TopBar() {
-  const settings = await getSiteSettings();
-
   return (
     <>
       <header className="sticky top-0 z-40 hidden md:block">
         <div className="mx-auto max-w-6xl px-6 pt-4">
           <div className="glass flex items-center justify-between rounded-full px-6 py-3 shadow-sm">
-            <Link href="/outfit" className="flex items-center gap-2 font-display text-2xl font-semibold text-brown">
-              <Logo size={30} />
-              {settings.siteName}
-            </Link>
+            <SiteSwitcher current="outfit" />
 
             <DesktopNavLinks />
 
@@ -33,10 +26,9 @@ export async function TopBar() {
 
       {/* Mobile: compact top strip, logo + language + theme + search (nav lives in the bottom bar) */}
       <header className="sticky top-0 z-40 flex items-center justify-between gap-2 px-4 pt-4 md:hidden">
-        <Link href="/outfit" className="glass flex items-center gap-1.5 rounded-full px-3 py-2 font-display text-lg font-semibold text-brown">
-          <Logo size={24} />
-          {settings.siteName}
-        </Link>
+        <div className="glass rounded-full px-1 py-1">
+          <SiteSwitcher current="outfit" compact />
+        </div>
         <div className="glass flex items-center gap-1 rounded-full px-1.5 py-1.5">
           <LanguageToggle />
           <ThemeToggle />

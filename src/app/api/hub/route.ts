@@ -13,7 +13,7 @@ export async function PATCH(request: Request) {
 
   const previous = await getHubSettings();
   await updateHubSettings(parsed.data);
-  for (const key of ["outfitImage", "storeImage"] as const) {
+  for (const key of ["outfitImage", "storeImage", "storeLogo"] as const) {
     if (parsed.data[key] !== undefined && parsed.data[key] !== previous[key]) {
       await deleteSettingImageIfUnused(previous[key]);
     }

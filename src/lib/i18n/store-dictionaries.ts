@@ -3,6 +3,7 @@ import type { OrderStatus } from "@/types/store";
 
 /** Strings for the hub page, the by.narras storefront and its admin. */
 const en = {
+  switcher: { label: "Switch site", current: "You're here", home: "All sites" },
   hub: {
     title: "Choose where to go",
     outfitTitle: "Spill Outfit",
@@ -116,6 +117,9 @@ const en = {
       outfitCard: "Spill Outfit card",
       storeCard: "by.narras card",
       remove: "Use automatic photo",
+      storeLogo: "by.narras logo",
+      storeLogoHint: "Shown in the site switcher and the store header. Square works best.",
+      removeLogo: "Remove logo",
       save: "Save",
       saved: "Front page saved",
       failed: "Couldn't save the front page",
@@ -250,6 +254,7 @@ const en = {
 export type StoreDictionary = typeof en;
 
 const id: StoreDictionary = {
+  switcher: { label: "Pindah situs", current: "Sedang dibuka", home: "Semua situs" },
   hub: {
     title: "Mau ke mana hari ini?",
     outfitTitle: "Spill Outfit",
@@ -363,6 +368,9 @@ const id: StoreDictionary = {
       outfitCard: "Kartu Spill Outfit",
       storeCard: "Kartu by.narras",
       remove: "Pakai foto otomatis",
+      storeLogo: "Logo by.narras",
+      storeLogoHint: "Tampil di switcher situs dan header toko. Paling pas bentuk persegi.",
+      removeLogo: "Hapus logo",
       save: "Simpan",
       saved: "Halaman depan disimpan",
       failed: "Gagal menyimpan halaman depan",

@@ -17,6 +17,7 @@ export function HubSettingsForm({ initial }: { initial: HubSettings }) {
   const router = useRouter();
   const [outfitImage, setOutfitImage] = useState(initial.outfitImage ?? "");
   const [storeImage, setStoreImage] = useState(initial.storeImage ?? "");
+  const [storeLogo, setStoreLogo] = useState(initial.storeLogo ?? "");
   const [saving, setSaving] = useState(false);
 
   async function save() {
@@ -24,7 +25,7 @@ export function HubSettingsForm({ initial }: { initial: HubSettings }) {
     const res = await fetch("/api/hub", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ outfitImage, storeImage }),
+      body: JSON.stringify({ outfitImage, storeImage, storeLogo }),
     });
     setSaving(false);
     if (!res.ok) {
@@ -45,6 +46,12 @@ export function HubSettingsForm({ initial }: { initial: HubSettings }) {
           <ImageSetting value={storeImage} onChange={setStoreImage} ratio={HUB_CARD_RATIO} clearLabel={h.remove} />
         </Card>
       </div>
+      <Card title={h.storeLogo}>
+        <p className="-mt-2 mb-3 text-xs text-brown-soft">{h.storeLogoHint}</p>
+        <div className="max-w-[200px]">
+          <ImageSetting value={storeLogo} onChange={setStoreLogo} ratio={1} clearLabel={h.removeLogo} />
+        </div>
+      </Card>
       <button type="button" onClick={save} disabled={saving} className={primaryButton}>
         {h.save}
       </button>

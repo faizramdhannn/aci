@@ -72,4 +72,5 @@ export const storeSettingsSchema = z.object({
 export const hubSettingsSchema = z.object({
   outfitImage: z.string().max(1000).optional(),
   storeImage: z.string().max(1000).optional(),
+  storeLogo: z.string().max(1000).optional(),
 });
