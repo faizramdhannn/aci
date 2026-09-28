@@ -4,6 +4,7 @@ import { getMemoryStore } from "@/lib/memory-store";
 import { deleteStoredImage } from "@/lib/storage";
 import { toWhatsappDigits } from "@/lib/store/whatsapp";
 import type {
+  HubSettings,
   OrderCustomer,
   OrderItem,
   OrderStatus,
@@ -388,4 +389,26 @@ export function salesSummary(orders: StoreOrder[], now = new Date()) {
     toConfirm: orders.filter((o) => o.status === "pending").length,
     toShip: orders.filter((o) => o.status === "paid").length,
   };
+}
+
+// ── Hub page ────────────────────────────────────────────────────────────────
+
+export async function getHubSettings(): Promise<HubSettings> {
+  const db = await getDb();
+  if (!db) return getMemoryStore().hubSettings ?? {};
+  const doc = await db.collection<HubSettings & { _id: string }>("settings").findOne({ _id: "hub" });
+  if (!doc) return {};
+  const { _id, ...settings } = doc;
+  void _id;
+  return settings;
+}
+
+export async function updateHubSettings(patch: HubSettings): Promise<void> {
+  const db = await getDb();
+  if (!db) {
+    const store = getMemoryStore();
+    store.hubSettings = { ...(store.hubSettings ?? {}), ...patch };
+    return;
+  }
+  await db.collection<HubSettings & { _id: string }>("settings").updateOne({ _id: "hub" }, { $set: patch }, { upsert: true });
 }

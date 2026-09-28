@@ -5,7 +5,7 @@ import { LanguageToggle } from "@/components/i18n/language-toggle";
 import { ThemeToggle } from "@/components/navigation/theme-toggle";
 import { HUB_NAME } from "@/config/site";
 import { getSiteSettings, listFeaturedImages, listPublishedImagesExcluding } from "@/lib/data";
-import { getStoreSettings, listStoreProducts } from "@/lib/store/data";
+import { getHubSettings, getStoreSettings, listStoreProducts } from "@/lib/store/data";
 import { getStoreDictionary } from "@/lib/i18n/server";
 
 export const dynamic = "force-dynamic";
@@ -14,17 +14,18 @@ export const metadata: Metadata = { title: { absolute: HUB_NAME } };
 
 /** Landing page after the splash: pick the outfit site or the hijab store. */
 export default async function HubPage() {
-  const [t, site, store, featured, latest, products] = await Promise.all([
+  const [t, site, store, hub, featured, latest, products] = await Promise.all([
     getStoreDictionary(),
     getSiteSettings(),
     getStoreSettings(),
+    getHubSettings(),
     listFeaturedImages(),
     listPublishedImagesExcluding([], 1),
     listStoreProducts({ activeOnly: true }),
   ]);
 
-  const outfitCover = featured[0]?.imageUrl ?? latest[0]?.imageUrl;
-  const storeCover = products.find((p) => p.images[0])?.images[0];
+  const outfitCover = hub.outfitImage || (featured[0]?.imageUrl ?? latest[0]?.imageUrl);
+  const storeCover = hub.storeImage || products.find((p) => p.images[0])?.images[0];
 
   const cards = [
     {

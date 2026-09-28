@@ -6,6 +6,7 @@ import type { StoreSettings } from "@/types/store";
 import { Card, adminInput, primaryButton } from "@/components/admin/store/ui";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
 import { useToast } from "@/components/ui/toast-provider";
+import { ImageSetting } from "@/components/admin/store/image-setting";
 import { format } from "@/lib/i18n/dictionaries";
 
 export function StoreSettingsForm({ initial }: { initial: StoreSettings }) {
@@ -65,6 +66,28 @@ export function StoreSettingsForm({ initial }: { initial: StoreSettings }) {
           <label className="block text-sm">
             <span className="mb-1 block text-xs text-brown-soft">{s.instagram}</span>
             <input type="url" placeholder="https://instagram.com/…" {...field("instagramUrl")} className={adminInput} />
+          </label>
+        </div>
+      </Card>
+      <Card title={s.hero}>
+        <p className="-mt-2 mb-4 text-xs text-brown-soft">{s.heroHint}</p>
+        <div className="space-y-4">
+          <div className="text-sm">
+            <span className="mb-1 block text-xs text-brown-soft">{s.heroImage}</span>
+            <ImageSetting
+              value={values.heroImage ?? ""}
+              onChange={(url) => setValues((v) => ({ ...v, heroImage: url }))}
+              ratio={16 / 9}
+              clearLabel={s.removeImage}
+            />
+          </div>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs text-brown-soft">{s.heroTitle}</span>
+            <input maxLength={80} placeholder={s.heroTitlePlaceholder} {...field("heroTitle")} className={adminInput} />
+          </label>
+          <label className="block text-sm">
+            <span className="mb-1 block text-xs text-brown-soft">{s.heroSubtitle}</span>
+            <input maxLength={200} {...field("heroSubtitle")} className={adminInput} />
           </label>
         </div>
       </Card>

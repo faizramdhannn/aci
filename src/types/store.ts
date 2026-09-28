@@ -72,4 +72,14 @@ export interface StoreSettings {
   /** Free text shown after ordering, e.g. bank account details. */
   paymentInfo: string;
   instagramUrl?: string;
+  /** Hero banner on /narras. No image = the plain text header. */
+  heroImage?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+}
+
+/** Cover photos of the two cards on the hub page (/). Empty = picked automatically. */
+export interface HubSettings {
+  outfitImage?: string;
+  storeImage?: string;
 }

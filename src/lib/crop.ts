@@ -12,6 +12,7 @@ export const ASPECT_RATIOS: { label: string; value: number | null }[] = [
   { label: "Original", value: null },
   { label: "4:5", value: 4 / 5 },
   { label: "1:1", value: 1 },
+  { label: "4:3", value: 4 / 3 },
   { label: "3:4", value: 3 / 4 },
   { label: "2:3", value: 2 / 3 },
   { label: "9:16", value: 9 / 16 },

@@ -24,6 +24,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   ]);
   const studio = format(t.studio, { site: settings.siteName });
   const groups: AdminNavGroup[] = [
+    { label: st.admin.hubSection, items: [{ href: "/admin/hub", label: st.admin.nav.hub }] },
     {
       label: st.admin.outfitSection,
       items: adminNavItems.map((item) => ({ href: item.href, label: t.nav[item.key], exact: item.href === "/admin" })),

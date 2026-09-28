@@ -64,4 +64,12 @@ export const storeSettingsSchema = z.object({
   tagline: z.string().trim().max(160).optional(),
   paymentInfo: z.string().trim().max(1000).optional(),
   instagramUrl: z.union([z.literal(""), z.string().url()]).optional(),
+  heroImage: z.string().max(1000).optional(),
+  heroTitle: z.string().trim().max(80).optional(),
+  heroSubtitle: z.string().trim().max(200).optional(),
+});
+
+export const hubSettingsSchema = z.object({
+  outfitImage: z.string().max(1000).optional(),
+  storeImage: z.string().max(1000).optional(),
 });
