@@ -21,19 +21,28 @@ export function ShoppableImage({
 
   useEffect(() => {
     if (!trackView) return;
-    fetch("/api/analytics/view", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        shoppableImageId: image._id,
-        viewportWidth: window.innerWidth,
-        viewportHeight: window.innerHeight,
-        referrer: document.referrer || undefined,
-      }),
-      keepalive: true,
-    }).catch(() => {
-      /* view tracking is best-effort */
+    // One view per look per browser session is enough for analytics and
+    // saves a server call on every revisit or re-render.
+    const key = `aci-viewed:${image._id}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      /* storage blocked — still record */
+    }
+    const body = JSON.stringify({
+      shoppableImageId: image._id,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      referrer: document.referrer || undefined,
     });
+    // sendBeacon doesn't hold the page open and survives navigation.
+    const sent = navigator.sendBeacon?.("/api/analytics/view", new Blob([body], { type: "application/json" }));
+    if (!sent) {
+      fetch("/api/analytics/view", { method: "POST", headers: { "Content-Type": "application/json" }, body, keepalive: true }).catch(() => {
+        /* view tracking is best-effort */
+      });
+    }
      
   }, [image._id, trackView]);
 

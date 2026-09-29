@@ -10,6 +10,8 @@ const ORANGE = "#AD520D";
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
+    // Blob storage sends Access-Control-Allow-Origin: *, so the canvas stays exportable.
+    img.crossOrigin = "anonymous";
     img.onload = () => resolve(img);
     img.onerror = () => reject(new Error(`Couldn't load ${src}`));
     img.src = src;
@@ -32,10 +34,9 @@ function roundedRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: num
  * opens the phone's share sheet (so it can go straight to Instagram) or, on
  * desktop, downloads a JPEG.
  *
- * The photo is fetched through Next's same-origin image optimizer rather
- * than drawn from the editor canvas: the original may live on another origin
- * (Vercel Blob), and drawing a cross-origin image would taint the canvas and
- * make it impossible to export. Only the editor's vector overlays are taken
+ * The photo is loaded fresh with CORS (Vercel Blob allows any origin) rather
+ * than taken from the editor canvas, so drawing it doesn't taint the canvas
+ * and the result can still be exported. Only the editor's vector overlays are taken
  * from the Konva stage, with the photo and editor-only helpers hidden.
  */
 export async function exportStoryImage({
@@ -68,8 +69,7 @@ export async function exportStoryImage({
   const photoX = Math.round((STORY_WIDTH - photoWidth) / 2);
   const photoY = 150 + Math.round((areaHeight - photoHeight) / 2);
 
-  const optimizerWidth = photoWidth > 1080 ? 2048 : 1080;
-  const photo = await loadImage(`/_next/image?url=${encodeURIComponent(image.imageUrl)}&w=${optimizerWidth}&q=90`);
+  const photo = await loadImage(image.imageUrl);
 
   const hidden = hideForExport.filter((n): n is Konva.Node => Boolean(n));
   hidden.forEach((n) => n.hide());

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-const POLL_MS = 15_000;
+const POLL_MS = 60_000;
 
 /**
  * Keeps open pages up to date with admin edits: re-renders the current page

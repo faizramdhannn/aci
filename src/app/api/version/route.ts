@@ -3,10 +3,10 @@ import { getContentVersion } from "@/lib/content-version";
 
 export const dynamic = "force-dynamic";
 
-/** Polled by open pages. Cached briefly at the edge so many visitors cost one database check per few seconds. */
+/** Polled by open pages. Cached briefly at the edge so many visitors cost one server run per ~30 seconds. */
 export async function GET() {
   return NextResponse.json(
     { v: await getContentVersion() },
-    { headers: { "Cache-Control": "public, max-age=0, s-maxage=5, stale-while-revalidate=10" } }
+    { headers: { "Cache-Control": "public, max-age=0, s-maxage=30, stale-while-revalidate=60" } }
   );
 }
