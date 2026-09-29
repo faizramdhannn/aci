@@ -3,6 +3,7 @@ import { ToastProvider } from "@/components/ui/toast-provider";
 import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SplashGate } from "@/components/storefront/splash-gate";
 import { AdminBar } from "@/components/navigation/admin-bar";
+import { LiveRefresh } from "@/components/live-refresh";
 import { auth, isAdminSession } from "@/lib/auth";
 import { SPLASH_COOKIES, type SplashBrand } from "@/lib/splash";
 import { getStoreSettings } from "@/lib/store/data";
@@ -63,6 +64,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
             seen={seen}
           />
           <ToastProvider>{children}</ToastProvider>
+          <LiveRefresh />
         </LocaleProvider>
       </body>
     </html>
