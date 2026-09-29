@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { desktopNavItems } from "@/config/site";
 import { useDictionary } from "@/components/i18n/locale-provider";
+import { useAppPathname } from "@/lib/use-app-pathname";
 
 export function isActivePath(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
@@ -11,7 +11,7 @@ export function isActivePath(pathname: string, href: string) {
 
 /** Desktop top-bar links with the current section highlighted as a pill. */
 export function DesktopNavLinks() {
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const t = useDictionary();
 
   return (
@@ -37,7 +37,7 @@ export function DesktopNavLinks() {
 
 /** "Favorites" link in the top bar, highlighted the same way when active. */
 export function FavoritesNavLink() {
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const t = useDictionary();
   const active = isActivePath(pathname, "/favorites");
   return (

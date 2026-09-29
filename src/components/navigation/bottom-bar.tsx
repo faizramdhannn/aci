@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { mobileNavItems } from "@/config/site";
 import { NavIcon } from "@/components/navigation/nav-icon";
 import { useDictionary } from "@/components/i18n/locale-provider";
 import { isActivePath } from "@/components/navigation/desktop-nav-links";
+import { useAppPathname } from "@/lib/use-app-pathname";
 
 export function BottomBar() {
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const t = useDictionary();
 
   return (

@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { adminSession } from "@/lib/auth";
 import { productSchema } from "@/lib/store/schemas";
 import { createStoreProduct, generateProductSlug, listStoreProducts } from "@/lib/store/data";
+import { withRevalidate } from "@/lib/revalidate";
 
 /** Admin: active products, for linking one from a Spill Outfit look. */
 export async function GET() {
@@ -11,7 +12,7 @@ export async function GET() {
   return NextResponse.json(products.map((p) => ({ _id: p._id, title: p.title, slug: p.slug, price: p.price })));
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -34,3 +35,5 @@ export async function POST(request: Request) {
   await createStoreProduct(product);
   return NextResponse.json(product, { status: 201 });
 }
+
+export const POST = withRevalidate(handlePOST);

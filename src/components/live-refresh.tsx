@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
+import { useAppPathname } from "@/lib/use-app-pathname";
 
 const POLL_MS = 60_000;
 
@@ -12,7 +13,7 @@ const POLL_MS = 60_000;
  */
 export function LiveRefresh() {
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const version = useRef<string | null>(null);
 
   // The admin refreshes itself after each save; auto-refreshing mid-edit would get in the way.

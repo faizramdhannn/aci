@@ -3,8 +3,9 @@ import { adminSession } from "@/lib/auth";
 import { productSchema } from "@/lib/store/schemas";
 import { deleteStoreProduct, generateProductSlug, getStoreProductById, updateStoreProduct } from "@/lib/store/data";
 import { deleteStoredImage } from "@/lib/storage";
+import { withRevalidate } from "@/lib/revalidate";
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handlePATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
@@ -34,10 +35,13 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   return NextResponse.json({ ok: true, slug: patch.slug ?? existing.slug });
 }
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handleDELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
   await deleteStoreProduct(id);
   return NextResponse.json({ ok: true });
 }
+
+export const PATCH = withRevalidate(handlePATCH);
+export const DELETE = withRevalidate(handleDELETE);

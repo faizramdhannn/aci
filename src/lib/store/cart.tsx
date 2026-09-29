@@ -1,8 +1,10 @@
 "use client";
 
 import { createContext, useCallback, useContext, useRef, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import type { CartItem } from "@/types/store";
+import { useAppPathname } from "@/lib/use-app-pathname";
+import { useMe } from "@/lib/use-me";
 
 /**
  * The shopper's cart lives on their account, so it follows them across
@@ -22,27 +24,27 @@ interface CartContextValue {
   clearCartLocally: () => void;
   loginHref: string;
   wishlist: string[];
+  /** Signed-in account's name, once /api/me has answered. */
+  accountName?: string;
+  /** False until we know whether someone is signed in. */
+  known: boolean;
   /** Returns the new state (true = saved), or null when sent to log in. */
   toggleWishlist: (productId: string) => boolean | null;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
-export function CartProvider({
-  initial,
-  initialWishlist,
-  signedIn,
-  children,
-}: {
-  initial: CartLine[];
-  initialWishlist: string[];
-  signedIn: boolean;
-  children: React.ReactNode;
-}) {
-  const [lines, setLines] = useState(initial);
-  const [wishlist, setWishlist] = useState(initialWishlist);
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  // Pages are cached for everyone; the account's saved cart and wishlist come
+  // from /api/me in the browser. Local edits take over from then on.
+  const me = useMe();
+  const signedIn = Boolean(me?.signedIn);
+  const [localLines, setLines] = useState<CartLine[] | null>(null);
+  const [localWishlist, setWishlist] = useState<string[] | null>(null);
+  const lines = localLines ?? me?.cart ?? [];
+  const wishlist = localWishlist ?? me?.wishlist ?? [];
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const saving = useRef(Promise.resolve());
   const loginHref = `/narras/login?callbackUrl=${encodeURIComponent(pathname)}`;
 
@@ -85,6 +87,8 @@ export function CartProvider({
     },
     replaceCart: save,
     clearCartLocally: () => setLines([]),
+    accountName: me?.name,
+    known: me !== null,
     wishlist,
     toggleWishlist(productId) {
       if (!signedIn) {

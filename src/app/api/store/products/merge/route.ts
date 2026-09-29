@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { adminSession } from "@/lib/auth";
 import { mergeProducts } from "@/lib/store/merge";
+import { withRevalidate } from "@/lib/revalidate";
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   if (!(await adminSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const parsed = z
     .object({ ids: z.array(z.string().min(1).max(64)).min(2).max(20), title: z.string().trim().max(120).optional() })
@@ -12,3 +13,5 @@ export async function POST(request: Request) {
   const product = await mergeProducts(parsed.data.ids, parsed.data.title);
   return NextResponse.json({ id: product._id });
 }
+
+export const POST = withRevalidate(handlePOST);

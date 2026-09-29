@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { adminSession } from "@/lib/auth";
 import { deleteReview, setReviewStatus } from "@/lib/store/reviews";
+import { withRevalidate } from "@/lib/revalidate";
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handlePATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await adminSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const parsed = z.object({ status: z.enum(["active", "draft"]) }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "invalid" }, { status: 400 });
@@ -11,8 +12,11 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handleDELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   if (!(await adminSession())) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   await deleteReview((await params).id);
   return NextResponse.json({ ok: true });
 }
+
+export const PATCH = withRevalidate(handlePATCH);
+export const DELETE = withRevalidate(handleDELETE);

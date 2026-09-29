@@ -4,6 +4,7 @@ import { z } from "zod";
 import { adminSession } from "@/lib/auth";
 import { createCategory, listCategories } from "@/lib/data";
 import type { Category } from "@/types";
+import { withRevalidate } from "@/lib/revalidate";
 
 const bodySchema = z.object({
   name: z.string().min(1),
@@ -26,7 +27,7 @@ export async function GET() {
   return NextResponse.json(categories);
 }
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -48,3 +49,5 @@ export async function POST(request: Request) {
   await createCategory(category);
   return NextResponse.json(category, { status: 201 });
 }
+
+export const POST = withRevalidate(handlePOST);

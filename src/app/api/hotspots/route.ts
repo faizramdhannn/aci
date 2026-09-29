@@ -4,6 +4,7 @@ import { z } from "zod";
 import { adminSession } from "@/lib/auth";
 import { upsertHotspot } from "@/lib/data";
 import type { Hotspot } from "@/types";
+import { withRevalidate } from "@/lib/revalidate";
 
 const bodySchema = z.object({
   shoppableImageId: z.string().min(1),
@@ -22,7 +23,7 @@ const bodySchema = z.object({
   height: z.number().min(0.01).max(1),
 });
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -48,3 +49,5 @@ export async function POST(request: Request) {
   await upsertHotspot(hotspot);
   return NextResponse.json(hotspot, { status: 201 });
 }
+
+export const POST = withRevalidate(handlePOST);

@@ -125,8 +125,12 @@ body {
 @font-face {
   font-family: "Lazydog";
   src:
-    url("/fonts/Lazydog.woff2") format("woff2"),
-    url("/fonts/Lazydog.otf") format("opentype"),
     url("/fonts/Lazydog.ttf") format("truetype");
   font-display: block;
+}
+
+/* Splash already seen this session (set before paint by SPLASH_SEEN_SCRIPT). */
+html[data-splash-seen~="outfit"] [data-splash-brand="outfit"],
+html[data-splash-seen~="store"] [data-splash-brand="store"] {
+  display: none;
 }

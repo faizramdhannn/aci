@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import type { StoreProduct } from "@/types/store";
 import { ProductGallery } from "@/components/store/product-gallery";
 import { AddToCart } from "@/components/store/add-to-cart";
@@ -11,23 +11,19 @@ import { priceRange, variantCompareAt, variantImage, variantPrice } from "@/lib/
  * Gallery + price + variant picker for a product page. Picking a variant
  * shows its own photo and price when it has them (Shopify-style variants).
  */
-export function ProductBuyBox({
-  product,
-  initialVariant,
-  children,
-}: {
-  product: StoreProduct;
-  /** From ?v= (a swatch clicked on a product card). */
-  initialVariant?: string;
-  children?: React.ReactNode;
-}) {
-  const [variantId, setVariantId] = useState<string | null>(
-    () =>
-      product.variants.find((v) => v.id === initialVariant)?.id ??
-      product.variants.find((v) => v.stock > 0)?.id ??
-      product.variants[0]?.id ??
-      null
+export function ProductBuyBox({ product, children }: { product: StoreProduct; children?: React.ReactNode }) {
+  // ?v= (a swatch clicked on a product card), read in the browser so the page itself stays cacheable.
+  const fromUrl = useSyncExternalStore(
+    () => () => {},
+    () => new URLSearchParams(window.location.search).get("v"),
+    () => null
   );
+  const [picked, setVariantId] = useState<string | null>(null);
+  const variantId =
+    product.variants.find((v) => v.id === (picked ?? fromUrl))?.id ??
+    product.variants.find((v) => v.stock > 0)?.id ??
+    product.variants[0]?.id ??
+    null;
   const variant = product.variants.find((v) => v.id === variantId);
   const price = variantPrice(product, variant);
   const compareAt = variantCompareAt(product, variant);

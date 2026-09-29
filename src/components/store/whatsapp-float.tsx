@@ -1,13 +1,13 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
 import { whatsappLink } from "@/lib/store/whatsapp";
+import { useAppPathname } from "@/lib/use-app-pathname";
 
 /** Floating chat button on by.narras pages (hidden on checkout/account pages, where it would cover forms). */
 export function WhatsappFloat({ number }: { number: string }) {
   const t = useStoreDictionary().store;
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   if (!number || /^\/narras\/(cart|login|register|forgot-password|reset-password|account)/.test(pathname)) return null;
   return (
     <a

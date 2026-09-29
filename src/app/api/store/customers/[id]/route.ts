@@ -3,9 +3,10 @@ import { z } from "zod";
 import { adminSession } from "@/lib/auth";
 import { isSuperadminEmail } from "@/config/admins";
 import { getCustomerById, setCustomerRole } from "@/lib/store/customers";
+import { withRevalidate } from "@/lib/revalidate";
 
 /** Admin: change an account's role. Superadmins are fixed; you can't demote yourself. */
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handlePATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const parsed = z.object({ role: z.enum(["customer", "admin"]) }).safeParse(await request.json().catch(() => null));
@@ -20,3 +21,5 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   await setCustomerRole(id, parsed.data.role);
   return NextResponse.json({ ok: true });
 }
+
+export const PATCH = withRevalidate(handlePATCH);

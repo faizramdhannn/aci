@@ -7,6 +7,7 @@ import { adminSession } from "@/lib/auth";
 import { getShoppableImageById, reframeShoppableImage } from "@/lib/data";
 import { uploadImage } from "@/lib/storage";
 import { isFullCrop } from "@/lib/crop";
+import { withRevalidate } from "@/lib/revalidate";
 
 const MAX_DIMENSION = 1600;
 
@@ -35,7 +36,7 @@ async function readSourceImage(imageUrl: string, requestUrl: string): Promise<Bu
   return readFile(filePath);
 }
 
-export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -82,3 +83,5 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Couldn't crop this photo." }, { status: 500 });
   }
 }
+
+export const POST = withRevalidate(handlePOST);

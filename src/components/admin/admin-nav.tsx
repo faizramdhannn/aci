@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useAppPathname } from "@/lib/use-app-pathname";
 import {
   BarChart3,
   Images,
@@ -49,7 +49,7 @@ export interface AdminNavGroup {
 
 /** Sidebar (desktop) or chip row (mobile) of grouped admin links with the current page highlighted. */
 export function AdminNav({ groups, variant }: { groups: AdminNavGroup[]; variant: "sidebar" | "chips" }) {
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
 

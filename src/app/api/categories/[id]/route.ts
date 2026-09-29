@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { adminSession } from "@/lib/auth";
 import { deleteCategory, updateCategory } from "@/lib/data";
+import { withRevalidate } from "@/lib/revalidate";
 
 const patchSchema = z.object({
   name: z.string().min(1).optional(),
@@ -11,7 +12,7 @@ const patchSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handlePATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -24,7 +25,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handleDELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -32,3 +33,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
   await deleteCategory(id);
   return NextResponse.json({ ok: true });
 }
+
+export const PATCH = withRevalidate(handlePATCH);
+export const DELETE = withRevalidate(handleDELETE);

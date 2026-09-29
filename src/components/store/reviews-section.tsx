@@ -1,23 +1,14 @@
-import Link from "next/link";
-import { customerId } from "@/lib/auth";
-import { canReview, listReviews, ratingsByProduct } from "@/lib/store/reviews";
+import { listReviews, ratingsByProduct } from "@/lib/store/reviews";
 import { getLocale, getStoreDictionary } from "@/lib/i18n/server";
 import { format } from "@/lib/i18n/dictionaries";
 import { Stars } from "@/components/store/stars";
-import { ReviewForm } from "@/components/store/review-form";
+import { ReviewComposer } from "@/components/store/review-composer";
 
 export async function ReviewsSection({ productId }: { productId: string }) {
-  const [reviews, dict, locale, me] = await Promise.all([
-    listReviews({ productId }),
-    getStoreDictionary(),
-    getLocale(),
-    customerId(),
-  ]);
+  const [reviews, dict, locale] = await Promise.all([listReviews({ productId }), getStoreDictionary(), getLocale()]);
   const t = dict.reviews;
   const visible = reviews.filter((r) => r.status === "active");
   const summary = ratingsByProduct(visible)[productId];
-  const mine = me ? reviews.find((r) => r.customerId === me) : undefined;
-  const eligible = me ? await canReview(me, productId) : false;
   const date = new Intl.DateTimeFormat(locale === "id" ? "id-ID" : "en-GB", { day: "numeric", month: "short", year: "numeric" });
 
   return (
@@ -36,19 +27,7 @@ export async function ReviewsSection({ productId }: { productId: string }) {
       </div>
       <p className="mb-4 text-xs text-brown-soft">{t.onlyBuyers}</p>
 
-      {eligible ? (
-        <div className="mb-6 max-w-xl">
-          <ReviewForm productId={productId} initial={mine ? { rating: mine.rating, body: mine.body } : undefined} />
-        </div>
-      ) : (
-        !me && (
-          <p className="mb-6 text-sm">
-            <Link href="/narras/login" className="font-medium text-brown underline">
-              {t.loginToReview}
-            </Link>
-          </p>
-        )
-      )}
+      <ReviewComposer productId={productId} />
 
       {visible.length === 0 ? (
         <p className="text-sm text-brown-soft">{t.empty}</p>

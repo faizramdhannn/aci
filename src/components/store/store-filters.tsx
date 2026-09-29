@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Search, X } from "lucide-react";
 import type { StoreCollection } from "@/types/store";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
 import { SORTS } from "@/lib/store/catalog";
+import { useAppPathname } from "@/lib/use-app-pathname";
 
 const select =
   "rounded-full border border-brown/20 bg-surface px-3 py-2 text-sm text-brown outline-none focus:border-brown";
@@ -14,7 +15,7 @@ const select =
 export function StoreFilters({ collections, colours }: { collections: StoreCollection[]; colours: string[] }) {
   const t = useStoreDictionary().store;
   const router = useRouter();
-  const pathname = usePathname();
+  const pathname = useAppPathname();
   const params = useSearchParams();
   const [q, setQ] = useState(params.get("q") ?? "");
   const first = useRef(true);

@@ -23,10 +23,16 @@ function wavePath(level: number, phase: number) {
 export function SplashScreen({
   word,
   cookieName,
+  brand,
+  paused = false,
   onDone,
 }: {
   word: string;
   cookieName: string;
+  /** Lets the pre-paint script in the root layout hide it for visitors who've seen it (see SPLASH_SEEN_SCRIPT). */
+  brand?: string;
+  /** Rendered but not started yet: the gate doesn't know (until hydration) whether it should play. */
+  paused?: boolean;
   onDone?: () => void;
 }) {
   const onDoneRef = useRef(onDone);
@@ -34,6 +40,7 @@ export function SplashScreen({
   const waveRef = useRef<SVGPathElement>(null);
 
   useEffect(() => {
+    if (paused) return;
     document.cookie = `${cookieName}=1; path=/; samesite=lax`;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const previousOverflow = document.body.style.overflow;
@@ -86,7 +93,7 @@ export function SplashScreen({
       cancelAnimationFrame(raf);
       document.body.style.overflow = previousOverflow;
     };
-  }, [cookieName]);
+  }, [cookieName, paused]);
 
   if (phase === "gone") return null;
 
@@ -108,6 +115,7 @@ export function SplashScreen({
     <div
       role="status"
       aria-label={word}
+      data-splash-brand={brand}
       className="fixed inset-0 z-[100] flex items-center justify-center bg-cream transition-opacity ease-out"
       style={{ opacity: phase === "leaving" ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
     >

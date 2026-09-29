@@ -2,13 +2,14 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { adminSession } from "@/lib/auth";
 import { deleteShoppableImage, updateShoppableImage } from "@/lib/data";
+import { withRevalidate } from "@/lib/revalidate";
 
 const bodySchema = z.object({
   ids: z.array(z.string().min(1)).min(1),
   action: z.enum(["publish", "draft", "delete"]),
 });
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -27,3 +28,5 @@ export async function POST(request: Request) {
 
   return NextResponse.json({ ok: true, count: ids.length });
 }
+
+export const POST = withRevalidate(handlePOST);

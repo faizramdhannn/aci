@@ -5,9 +5,10 @@ import { orderMessage, whatsappLink } from "@/lib/store/whatsapp";
 import { allowRateLimitedHit } from "@/lib/rate-limit";
 import { customerId } from "@/lib/auth";
 import { setCart } from "@/lib/store/customers";
+import { withRevalidate } from "@/lib/revalidate";
 
 /** Checkout for signed-in customers: records the order, reserves stock, and returns the WhatsApp link to send it. */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const buyer = await customerId();
   if (!buyer) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
@@ -35,3 +36,5 @@ export async function POST(request: Request) {
     throw error;
   }
 }
+
+export const POST = withRevalidate(handlePOST);

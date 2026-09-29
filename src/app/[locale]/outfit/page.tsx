@@ -18,7 +18,8 @@ import { getDictionary } from "@/lib/i18n/server";
 // Content is managed from /admin and must reflect edits immediately —
 // without this, Next statically prerenders the page at build time and
 // visitors see stale data until the next deploy.
-export const dynamic = "force-dynamic";
+// Cached; refreshed whenever content changes (src/lib/revalidate.ts), at least hourly.
+export const revalidate = 3600;
 
 const HOME_GRID_SIZE = 8;
 

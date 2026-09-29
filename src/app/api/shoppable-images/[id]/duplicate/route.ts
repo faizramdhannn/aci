@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import { adminSession } from "@/lib/auth";
 import { duplicateShoppableImage } from "@/lib/data";
+import { withRevalidate } from "@/lib/revalidate";
 
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handlePOST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -12,3 +13,5 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
 
   return NextResponse.json(copy, { status: 201 });
 }
+
+export const POST = withRevalidate(handlePOST);

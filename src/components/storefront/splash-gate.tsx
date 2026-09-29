@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { SplashScreen } from "@/components/storefront/splash-screen";
 import { SPLASH_COOKIES, SWITCH_SITE_EVENT, splashBrandFor, type SplashBrand } from "@/lib/splash";
+import { useAppPathname } from "@/lib/use-app-pathname";
 
 /**
  * Plays the intro of the section being entered — "acishop" for Spill Outfit,
@@ -11,9 +11,19 @@ import { SPLASH_COOKIES, SWITCH_SITE_EVENT, splashBrandFor, type SplashBrand } f
  * when arriving normally, and every time the visitor switches sites from the
  * logo switcher (which fires SWITCH_SITE_EVENT). The hub and admin get none.
  */
-export function SplashGate({ words, seen }: { words: Record<SplashBrand, string>; seen: SplashBrand[] }) {
-  const brand = splashBrandFor(usePathname());
-  const [done, setDone] = useState<SplashBrand[]>(seen);
+export function SplashGate({ words }: { words: Record<SplashBrand, string> }) {
+  const brand = splashBrandFor(useAppPathname());
+  // Pages are cached for everyone, so "already seen" is read from cookies in
+  // the browser. Until hydration it's unknown (null): the splash is rendered
+  // paused, and the pre-paint script hides it for visitors who've seen it.
+  const cookies = useSyncExternalStore(
+    () => () => {},
+    () => document.cookie,
+    () => null
+  );
+  const seen =
+    cookies === null ? null : (Object.keys(SPLASH_COOKIES) as SplashBrand[]).filter((b) => cookies.includes(`${SPLASH_COOKIES[b]}=`));
+  const [done, setDone] = useState<SplashBrand[]>([]);
   const [replay, setReplay] = useState<{ brand: SplashBrand; n: number } | null>(null);
 
   useEffect(() => {
@@ -40,11 +50,13 @@ export function SplashGate({ words, seen }: { words: Record<SplashBrand, string>
     );
   }
 
-  if (!brand || done.includes(brand)) return null;
+  if (!brand || done.includes(brand) || seen?.includes(brand)) return null;
   return (
     <SplashScreen
       key={brand}
       word={words[brand]}
+      brand={brand}
+      paused={seen === null}
       cookieName={SPLASH_COOKIES[brand]}
       onDone={() => setDone((d) => [...d, brand])}
     />

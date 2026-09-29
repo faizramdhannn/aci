@@ -3,6 +3,7 @@ import { z } from "zod";
 import { adminSession } from "@/lib/auth";
 import { deleteHotspot, getHotspotById, getShoppableImageById, upsertHotspot } from "@/lib/data";
 import type { Hotspot } from "@/types";
+import { withRevalidate } from "@/lib/revalidate";
 
 const patchSchema = z.object({
   title: z.string().min(1).optional(),
@@ -21,7 +22,7 @@ const patchSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handlePATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -44,7 +45,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
   return NextResponse.json(updated);
 }
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handleDELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -87,7 +88,7 @@ const putSchema = z.object({
 });
 
 /** Full upsert by id — the editor's undo/redo uses it to restore a hotspot exactly, including one that was deleted. */
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handlePUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -110,3 +111,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   await upsertHotspot(hotspot);
   return NextResponse.json(hotspot);
 }
+
+export const PATCH = withRevalidate(handlePATCH);
+export const DELETE = withRevalidate(handleDELETE);
+export const PUT = withRevalidate(handlePUT);

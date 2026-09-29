@@ -4,6 +4,7 @@ import { addComment } from "@/lib/comments";
 import { getShoppableImageById } from "@/lib/data";
 import { getStoreProductById } from "@/lib/store/data";
 import { allowRateLimitedHit } from "@/lib/rate-limit";
+import { withRevalidate } from "@/lib/revalidate";
 
 const schema = z.object({
   target: z.enum(["look", "product"]),
@@ -15,7 +16,7 @@ const schema = z.object({
 });
 
 /** Public: anyone can comment on a published look or an active product. */
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
   if (!(await allowRateLimitedHit(ip, { scope: "comment", max: 3 }))) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
@@ -34,3 +35,5 @@ export async function POST(request: Request) {
   const comment = await addComment({ target, targetId, name, body });
   return NextResponse.json(comment, { status: 201 });
 }
+
+export const POST = withRevalidate(handlePOST);

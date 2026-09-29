@@ -1,18 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { LayoutDashboard } from "lucide-react";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
+import { useAppPathname } from "@/lib/use-app-pathname";
+import { useMe } from "@/lib/use-me";
 
 /**
  * Shopify-style strip shown to signed-in admins while they browse the public
  * sites, with a shortcut to the matching part of the dashboard.
  */
-export function AdminBar({ email }: { email: string }) {
+export function AdminBar() {
   const t = useStoreDictionary().adminBar;
-  const pathname = usePathname();
-  if (pathname.startsWith("/admin")) return null;
+  const pathname = useAppPathname();
+  const me = useMe();
+  if (pathname.startsWith("/admin") || !me?.isAdmin) return null;
+  const email = me.email ?? "";
   const dashboard = pathname.startsWith("/narras") ? "/admin/store" : "/admin";
 
   return (

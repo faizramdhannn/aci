@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { getStoreSettings } from "@/lib/store/data";
 import { getStoreDictionary } from "@/lib/i18n/server";
 
-export const dynamic = "force-dynamic";
+// Cached; refreshed whenever content changes (src/lib/revalidate.ts), at least hourly.
+export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getStoreDictionary()).store.info };

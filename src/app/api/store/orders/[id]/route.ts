@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { adminSession } from "@/lib/auth";
 import { orderPatchSchema } from "@/lib/store/schemas";
 import { OrderError, updateOrder } from "@/lib/store/data";
+import { withRevalidate } from "@/lib/revalidate";
 
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+async function handlePATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
@@ -25,3 +26,5 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     throw error;
   }
 }
+
+export const PATCH = withRevalidate(handlePATCH);

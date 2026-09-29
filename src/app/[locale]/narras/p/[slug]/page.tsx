@@ -10,7 +10,13 @@ import { ShareButtons } from "@/components/store/share-buttons";
 import { listReviews, ratingsByProduct } from "@/lib/store/reviews";
 import { getStoreDictionary } from "@/lib/i18n/server";
 
-export const dynamic = "force-dynamic";
+// Cached; refreshed whenever content changes (src/lib/revalidate.ts), at least hourly.
+export const revalidate = 3600;
+
+/** None at build time (no database needed then); each page is rendered on its first visit and cached. */
+export function generateStaticParams() {
+  return [];
+}
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const [{ slug }, settings] = await Promise.all([params, getStoreSettings()]);
@@ -23,14 +29,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   };
 }
 
-export default async function ProductPage({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ slug: string }>;
-  searchParams: Promise<{ v?: string }>;
-}) {
-  const [{ slug }, { v: initialVariant }] = await Promise.all([params, searchParams]);
+export default async function ProductPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
   const [product, t] = await Promise.all([getStoreProductBySlug(slug), getStoreDictionary()]);
   if (!product || product.status !== "active") notFound();
   const [all, reviews] = await Promise.all([listStoreProducts({ activeOnly: true }), listReviews({ status: "active" })]);
@@ -40,7 +40,7 @@ export default async function ProductPage({
 
   return (
     <main className="mx-auto w-full max-w-6xl px-4 pt-6 sm:px-6 md:pt-10">
-      <ProductBuyBox product={product} initialVariant={initialVariant}>
+      <ProductBuyBox product={product}>
         {product.description && (
           <p className="mt-8 whitespace-pre-line text-sm leading-relaxed text-brown-soft">{product.description}</p>
         )}

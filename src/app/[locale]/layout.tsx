@@ -4,16 +4,16 @@ import { LocaleProvider } from "@/components/i18n/locale-provider";
 import { SplashGate } from "@/components/storefront/splash-gate";
 import { AdminBar } from "@/components/navigation/admin-bar";
 import { LiveRefresh } from "@/components/live-refresh";
-import { auth, isAdminSession } from "@/lib/auth";
-import { SPLASH_COOKIES, type SplashBrand } from "@/lib/splash";
+import { SPLASH_SEEN_SCRIPT } from "@/lib/splash";
+import { notFound } from "next/navigation";
+import { isLocale } from "@/lib/i18n/dictionaries";
 import { getStoreSettings } from "@/lib/store/data";
-import { cookies } from "next/headers";
 import { siteUrl } from "@/lib/site-url";
 import { fontVariables } from "@/lib/fonts";
 import { getLocale } from "@/lib/i18n/server";
 import { getSiteSettings } from "@/lib/data";
 import { HUB_NAME } from "@/config/site";
-import "./globals.css";
+import "../globals.css";
 
 export const viewport: Viewport = {
   themeColor: [
@@ -44,25 +44,25 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
-  const [locale, cookieStore, site, store, session] = await Promise.all([
-    getLocale(),
-    cookies(),
-    getSiteSettings(),
-    getStoreSettings(),
-    auth(),
-  ]);
-  const seen = (Object.keys(SPLASH_COOKIES) as SplashBrand[]).filter((b) => cookieStore.get(SPLASH_COOKIES[b]));
+/** Pages render on first request per language and are then cached (see src/lib/revalidate.ts). */
+export function generateStaticParams() {
+  return [];
+}
+
+export default async function RootLayout({ children, params }: LayoutProps<"/[locale]">) {
+  const { locale: raw } = await params;
+  if (!isLocale(raw)) notFound();
+  const [locale, site, store] = await Promise.all([getLocale(), getSiteSettings(), getStoreSettings()]);
 
   return (
     <html lang={locale} className={`${fontVariables} h-full antialiased`} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: SPLASH_SEEN_SCRIPT }} />
+      </head>
       <body className="min-h-full flex flex-col bg-cream text-brown" suppressHydrationWarning>
         <LocaleProvider locale={locale}>
-          {isAdminSession(session) && <AdminBar email={session!.user?.email ?? ""} />}
-          <SplashGate
-            words={{ outfit: site.siteName.toLowerCase(), store: store.storeName }}
-            seen={seen}
-          />
+          <AdminBar />
+          <SplashGate words={{ outfit: site.siteName.toLowerCase(), store: store.storeName }} />
           <ToastProvider>{children}</ToastProvider>
           <LiveRefresh />
         </LocaleProvider>

@@ -13,7 +13,13 @@ import { format } from "@/lib/i18n/dictionaries";
 import { storeNameFor } from "@/lib/store-name";
 import { CommentsSection } from "@/components/comments/comments-section";
 
-export const dynamic = "force-dynamic";
+// Cached; refreshed whenever content changes (src/lib/revalidate.ts), at least hourly.
+export const revalidate = 3600;
+
+/** None at build time (no database needed then); each page is rendered on its first visit and cached. */
+export function generateStaticParams() {
+  return [];
+}
 
 type Params = Promise<{ slug: string }>;
 

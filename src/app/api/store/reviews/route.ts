@@ -2,8 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { customerId } from "@/lib/auth";
 import { getCustomerById } from "@/lib/store/customers";
-import { canReview, saveReview } from "@/lib/store/reviews";
+import { canReview, listReviews, saveReview } from "@/lib/store/reviews";
 import { allowRateLimitedHit } from "@/lib/rate-limit";
+import { withRevalidate } from "@/lib/revalidate";
 
 const schema = z.object({
   productId: z.string().min(1).max(64),
@@ -11,7 +12,20 @@ const schema = z.object({
   body: z.string().trim().max(1000).default(""),
 });
 
-export async function POST(request: Request) {
+/** The signed-in customer's standing for a product: can they review it, and their existing review. */
+export async function GET(request: Request) {
+  const id = await customerId();
+  if (!id) return NextResponse.json({ eligible: false }, { headers: { "Cache-Control": "private, no-store" } });
+  const productId = new URL(request.url).searchParams.get("productId") ?? "";
+  const [eligible, reviews] = await Promise.all([canReview(id, productId), listReviews({ productId })]);
+  const mine = reviews.find((r) => r.customerId === id);
+  return NextResponse.json(
+    { eligible, mine: mine ? { rating: mine.rating, body: mine.body } : null },
+    { headers: { "Cache-Control": "private, no-store" } }
+  );
+}
+
+async function handlePOST(request: Request) {
   const id = await customerId();
   if (!id) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   if (!(await allowRateLimitedHit(id, { scope: "review", max: 5 }))) {
@@ -24,3 +38,5 @@ export async function POST(request: Request) {
   const review = await saveReview({ ...parsed.data, customerId: id, name: customer?.name ?? "" });
   return NextResponse.json(review, { status: 201 });
 }
+
+export const POST = withRevalidate(handlePOST);

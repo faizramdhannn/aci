@@ -3,8 +3,9 @@ import { adminSession } from "@/lib/auth";
 import { hubSettingsSchema } from "@/lib/store/schemas";
 import { getHubSettings, updateHubSettings } from "@/lib/store/data";
 import { deleteSettingImageIfUnused } from "@/lib/store/cleanup";
+import { withRevalidate } from "@/lib/revalidate";
 
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -20,3 +21,5 @@ export async function PATCH(request: Request) {
   }
   return NextResponse.json({ ok: true });
 }
+
+export const PATCH = withRevalidate(handlePATCH);

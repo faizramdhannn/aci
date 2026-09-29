@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { CircleUserRound } from "lucide-react";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
+import { useCartContext } from "@/lib/store/cart";
 
-export function AccountLink({ name }: { name?: string }) {
+export function AccountLink() {
   const t = useStoreDictionary().account;
+  const name = useCartContext().accountName;
   const label = name ? t.myAccount : t.login;
   return (
     <Link

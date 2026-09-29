@@ -9,7 +9,8 @@ import { getSiteSettings, listFeaturedImages, listPublishedImagesExcluding } fro
 import { getHubSettings, getStoreSettings, listStoreProducts } from "@/lib/store/data";
 import { getStoreDictionary } from "@/lib/i18n/server";
 
-export const dynamic = "force-dynamic";
+// Cached; refreshed whenever content changes (src/lib/revalidate.ts), at least hourly.
+export const revalidate = 3600;
 
 export const metadata: Metadata = { title: { absolute: HUB_NAME } };
 

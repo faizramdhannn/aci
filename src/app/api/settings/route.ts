@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { adminSession } from "@/lib/auth";
 import { deleteImageIfUnused, getSiteSettings, updateSiteSettings } from "@/lib/data";
+import { withRevalidate } from "@/lib/revalidate";
 
 const optionalUrl = z.union([z.literal(""), z.string().url()]).optional();
 
@@ -16,7 +17,7 @@ const patchSchema = z.object({
   email: z.union([z.literal(""), z.string().email()]).optional(),
 });
 
-export async function PATCH(request: Request) {
+async function handlePATCH(request: Request) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -34,3 +35,5 @@ export async function PATCH(request: Request) {
   }
   return NextResponse.json({ ok: true });
 }
+
+export const PATCH = withRevalidate(handlePATCH);

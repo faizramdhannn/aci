@@ -4,6 +4,7 @@ import { z } from "zod";
 import { adminSession } from "@/lib/auth";
 import { upsertAnnotation } from "@/lib/data";
 import type { Annotation } from "@/types";
+import { withRevalidate } from "@/lib/revalidate";
 
 const arrowSchema = z.object({
   kind: z.literal("arrow"),
@@ -30,7 +31,7 @@ const textSchema = z.object({
 
 const bodySchema = z.union([arrowSchema, textSchema]);
 
-export async function POST(request: Request) {
+async function handlePOST(request: Request) {
   const session = await adminSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -51,3 +52,5 @@ export async function POST(request: Request) {
   await upsertAnnotation(annotation);
   return NextResponse.json(annotation, { status: 201 });
 }
+
+export const POST = withRevalidate(handlePOST);
