@@ -2,16 +2,65 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Select, Switch, ToggleGroup } from "radix-ui";
+import { Check, ChevronDown, Search, X } from "lucide-react";
 import type { StoreCollection } from "@/types/store";
 import { useStoreDictionary } from "@/components/i18n/use-store-dictionary";
 import { SORTS } from "@/lib/store/catalog";
 import { useAppPathname } from "@/lib/use-app-pathname";
 
-const select =
-  "rounded-full border border-brown/20 bg-surface px-3 py-2 text-sm text-brown outline-none focus:border-brown";
+const ALL = "all";
 
-/** Search box, collection chips, colour/sort menus and an in-stock toggle, all kept in the URL. */
+/** A Radix Select styled like the store's pills. */
+function PillSelect({
+  value,
+  onValueChange,
+  label,
+  options,
+}: {
+  value: string;
+  onValueChange: (v: string) => void;
+  label: string;
+  options: { value: string; label: string }[];
+}) {
+  return (
+    <Select.Root value={value} onValueChange={onValueChange}>
+      <Select.Trigger
+        aria-label={label}
+        className="inline-flex items-center gap-2 rounded-full border border-brown/20 bg-surface px-4 py-2 text-sm text-brown outline-none transition-colors hover:border-brown/50 focus-visible:border-brown data-[state=open]:border-brown"
+      >
+        <Select.Value />
+        <Select.Icon>
+          <ChevronDown className="h-4 w-4 text-brown-soft" />
+        </Select.Icon>
+      </Select.Trigger>
+      <Select.Portal>
+        <Select.Content
+          position="popper"
+          sideOffset={6}
+          className="z-50 max-h-[var(--radix-select-content-available-height)] min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-2xl border border-brown/10 bg-surface p-1 text-sm text-brown shadow-lg"
+        >
+          <Select.Viewport>
+            {options.map((o) => (
+              <Select.Item
+                key={o.value}
+                value={o.value}
+                className="relative flex cursor-pointer select-none items-center rounded-xl py-2 pl-8 pr-4 outline-none data-[highlighted]:bg-brown/10 data-[state=checked]:font-semibold"
+              >
+                <Select.ItemIndicator className="absolute left-2.5">
+                  <Check className="h-4 w-4 text-orange" />
+                </Select.ItemIndicator>
+                <Select.ItemText>{o.label}</Select.ItemText>
+              </Select.Item>
+            ))}
+          </Select.Viewport>
+        </Select.Content>
+      </Select.Portal>
+    </Select.Root>
+  );
+}
+
+/** Search box, collection chips, colour/sort menus and an in-stock switch (Radix UI), all kept in the URL. */
 export function StoreFilters({ collections, colours }: { collections: StoreCollection[]; colours: string[] }) {
   const t = useStoreDictionary().store;
   const router = useRouter();
@@ -41,12 +90,9 @@ export function StoreFilters({ collections, colours }: { collections: StoreColle
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only the typed text should trigger this
   }, [q]);
 
-  const active = params.get("collection");
-  const chip = (on: boolean) =>
-    `shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 text-sm transition-colors ${
-      on ? "border-brown bg-brown text-cream" : "border-brown/20 text-brown hover:border-brown/50"
-    }`;
-  const filtered = Boolean(params.get("q") || active || params.get("colour") || params.get("stock") || params.get("sort"));
+  const collection = params.get("collection") ?? ALL;
+  const inStock = params.get("stock") === "1";
+  const filtered = Boolean(params.get("q") || params.get("collection") || params.get("colour") || inStock || params.get("sort"));
 
   return (
     <div className="mb-6 space-y-3">
@@ -63,53 +109,49 @@ export function StoreFilters({ collections, colours }: { collections: StoreColle
       </div>
 
       {collections.length > 0 && (
-        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
-          <button type="button" onClick={() => update({ collection: null })} className={chip(!active)}>
-            {t.all}
-          </button>
-          {collections.map((c) => (
-            <button key={c._id} type="button" onClick={() => update({ collection: c.slug })} className={chip(active === c.slug)}>
+        <ToggleGroup.Root
+          type="single"
+          value={collection}
+          // Radix sends "" when the active chip is clicked again; keep one selected.
+          onValueChange={(v) => v && update({ collection: v === ALL ? null : v })}
+          aria-label={t.all}
+          className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0"
+        >
+          {[{ slug: ALL, name: t.all, _id: ALL }, ...collections].map((c) => (
+            <ToggleGroup.Item
+              key={c._id}
+              value={c.slug}
+              className="shrink-0 whitespace-nowrap rounded-full border border-brown/20 px-4 py-1.5 text-sm text-brown outline-none transition-colors hover:border-brown/50 focus-visible:ring-2 focus-visible:ring-brown/30 data-[state=on]:border-brown data-[state=on]:bg-brown data-[state=on]:text-cream"
+            >
               {c.name}
-            </button>
+            </ToggleGroup.Item>
           ))}
-        </div>
+        </ToggleGroup.Root>
       )}
 
       <div className="flex flex-wrap items-center gap-2">
         {colours.length > 1 && (
-          <select
-            value={params.get("colour") ?? ""}
-            onChange={(e) => update({ colour: e.target.value || null })}
-            aria-label={t.colour_}
-            className={select}
-          >
-            <option value="">{t.allColours}</option>
-            {colours.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-        )}
-        <select
-          value={params.get("sort") ?? "newest"}
-          onChange={(e) => update({ sort: e.target.value === "newest" ? null : e.target.value })}
-          aria-label={t.sortBy}
-          className={select}
-        >
-          {SORTS.map((s) => (
-            <option key={s} value={s}>
-              {t.sorts[s]}
-            </option>
-          ))}
-        </select>
-        <label className="flex items-center gap-2 px-2 text-sm text-brown">
-          <input
-            type="checkbox"
-            checked={params.get("stock") === "1"}
-            onChange={(e) => update({ stock: e.target.checked ? "1" : null })}
-            className="accent-[var(--color-brown)]"
+          <PillSelect
+            label={t.colour_}
+            value={params.get("colour") ?? ALL}
+            onValueChange={(v) => update({ colour: v === ALL ? null : v })}
+            options={[{ value: ALL, label: t.allColours }, ...colours.map((c) => ({ value: c, label: c }))]}
           />
+        )}
+        <PillSelect
+          label={t.sortBy}
+          value={params.get("sort") ?? "newest"}
+          onValueChange={(v) => update({ sort: v === "newest" ? null : v })}
+          options={SORTS.map((s) => ({ value: s, label: t.sorts[s] }))}
+        />
+        <label className="flex cursor-pointer items-center gap-2 px-2 text-sm text-brown">
+          <Switch.Root
+            checked={inStock}
+            onCheckedChange={(on) => update({ stock: on ? "1" : null })}
+            className="relative h-5 w-9 shrink-0 rounded-full bg-brown/20 outline-none transition-colors focus-visible:ring-2 focus-visible:ring-brown/30 data-[state=checked]:bg-brown"
+          >
+            <Switch.Thumb className="block h-4 w-4 translate-x-0.5 rounded-full bg-cream shadow transition-transform data-[state=checked]:translate-x-[18px]" />
+          </Switch.Root>
           {t.inStockOnly}
         </label>
         {filtered && (
