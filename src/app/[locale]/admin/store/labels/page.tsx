@@ -3,6 +3,8 @@ import { PageHeader, primaryButton } from "@/components/admin/store/ui";
 import { PrintButton } from "@/components/admin/store/print-button";
 import { getOrderById, getStoreSettings, listOrders } from "@/lib/store/data";
 import { getStoreDictionary } from "@/lib/i18n/server";
+import { code128Svg, qrSvg } from "@/lib/store/codes";
+import { siteUrl } from "@/lib/site-url";
 import { ORDER_STATUSES, type OrderStatus, type StoreOrder } from "@/types/store";
 
 export const dynamic = "force-dynamic";
@@ -47,14 +49,27 @@ export default async function LabelsPage({ searchParams }: { searchParams: Promi
               <span className="text-[14pt] font-bold">{settings.storeName}</span>
               <span className="font-mono text-[12pt] font-bold">{o.number}</span>
             </div>
-            <div className="mt-2">
+            {/* Barcode of the order number (for scanners), QR opening the order in the admin (for phones). */}
+            <div
+              className="mt-2 h-[1.2cm] w-full [&>svg]:h-full [&>svg]:w-full"
+              aria-label={o.number}
+              dangerouslySetInnerHTML={{ __html: code128Svg(o.number) }}
+            />
+            <div className="mt-2 flex gap-3">
+            <div className="min-w-0 flex-1">
               <p className="text-[8pt] font-semibold uppercase">{l.to}</p>
-              <p className="text-[14pt] font-bold">{o.customer.name}</p>
+              <p className="text-[13pt] font-bold leading-tight">{o.customer.name}</p>
               <p className="font-semibold">{o.customer.phone}</p>
-              <p className="mt-1">{o.customer.address}</p>
+              <p className="mt-0.5 line-clamp-3 text-[10pt]">{o.customer.address}</p>
               <p className="font-semibold">
                 {o.customer.city} {o.customer.postalCode}
               </p>
+            </div>
+            <div
+              className="h-[2.2cm] w-[2.2cm] shrink-0 [&>svg]:h-full [&>svg]:w-full"
+              aria-label={`QR ${o.number}`}
+              dangerouslySetInnerHTML={{ __html: qrSvg(`${siteUrl}/admin/store/orders/${o._id}`) }}
+            />
             </div>
             <div className="mt-auto border-t border-black pt-1 text-[9pt]">
               <p>
